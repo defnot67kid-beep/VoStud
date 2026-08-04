@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Final Fix (No httpx dependency)
+Roblox AI Coder - Final Fix (Added itsdangerous)
 Handles Google & Roblox Login via manual OAuth URLs
 """
 
@@ -10,6 +10,7 @@ import time
 import logging
 import requests
 import uvicorn
+import secrets
 from collections import deque
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -33,7 +34,12 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 ROBLOX_CLIENT_ID = os.getenv("ROBLOX_CLIENT_ID")
 ROBLOX_CLIENT_SECRET = os.getenv("ROBLOX_CLIENT_SECRET")
+
+# Generate a random secret if the user hasn't set one yet, to prevent crash on Render
 SESSION_SECRET = os.getenv("SESSION_SECRET")
+if not SESSION_SECRET:
+    SESSION_SECRET = secrets.token_urlsafe(32)
+    logger.warning("⚠️ SESSION_SECRET not found in environment. Generated a random one. Logins will reset on restart.")
 
 # ==================== FASTAPI SETUP ====================
 app = FastAPI(title="Roblox AI Coder", version="3.0.0")
@@ -46,8 +52,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-if SESSION_SECRET:
-    app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
+# Add Session Middleware
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 
 # ==================== SERVE STATIC FILES ====================
 app.mount("/static", StaticFiles(directory="web"), name="static")
