@@ -327,8 +327,18 @@
         .scale-btn.active { background: #27272a; color: #f3f4f6; }
 
         .toolbar-right { display: flex; align-items: center; gap: 12px; }
-        .microphone-btn { background: transparent; border: none; color: #a1a1aa; font-size: 18px; cursor: pointer; transition: 0.2s; padding: 4px; }
+        .microphone-btn { 
+            background: transparent; border: none; color: #a1a1aa; font-size: 18px; cursor: pointer; transition: 0.2s; padding: 4px; 
+            position: relative;
+        }
         .microphone-btn:hover { color: #f3f4f6; }
+        .microphone-btn.listening { color: #ef4444; animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
 
         /* ==================== FOOTER BUTTONS ==================== */
         .footer-actions { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 24px; width: 100%; }
@@ -370,7 +380,7 @@
         .filter-btn { background: transparent; border: 1px solid #27272a; color: #a1a1aa; padding: 6px 16px; border-radius: 100px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
         .filter-btn:hover { background: #27272a; color: #fff; }
 
-        /* NEW: Auto Section Styling */
+        /* Auto Section */
         .auto-section {
             display: flex;
             align-items: center;
@@ -378,9 +388,9 @@
             margin-bottom: 12px;
             background: transparent;
             border-radius: 10px;
-            opacity: 0.6; /* Grey out */
+            opacity: 0.6;
             cursor: not-allowed;
-            pointer-events: none; /* Prevent clicking */
+            pointer-events: none;
         }
         .auto-section .list-icon {
             width: 28px; height: 28px;
@@ -445,7 +455,7 @@
         .bar-segment.filled-green { background: #22c55e; }
         .bar-segment.filled-yellow { background: #eab308; }
         .bar-segment.filled-red { background: #ef4444; }
-        .bar-segment.filled-adapt { background: #52525b; } /* For Auto bars if needed */
+        .bar-segment.filled-adapt { background: #52525b; }
         
         .detail-divider { border: none; border-top: 1px solid #27272a; margin: 16px 0; }
         
@@ -625,7 +635,7 @@
                 </div>
 
                 <div class="toolbar-right">
-                    <button class="microphone-btn">🎤</button>
+                    <button class="microphone-btn" id="micBtn">🎤</button>
                 </div>
             </div>
         </div>
@@ -653,7 +663,7 @@
                     <button class="filter-btn">Popularity</button>
                 </div>
 
-                <!-- Auto Section (Greyed Out) -->
+                <!-- Auto Section -->
                 <div class="auto-section">
                     <div class="list-icon">🌙</div>
                     <div class="auto-info">
@@ -667,7 +677,7 @@
                 <div class="section-label">ALL MODELS</div>
                 <div id="modelListContainer"></div>
 
-                <!-- Show More (Visual only) -->
+                <!-- Show More -->
                 <div class="show-more-btn">
                     <span style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-size: 12px;">▼</span> SHOW MORE MODELS
@@ -704,6 +714,79 @@
     </div>
 
     <script>
+        // ==================== VOICE TO TEXT (🎤) ====================
+        const micBtn = document.getElementById('micBtn');
+        const promptInput = document.getElementById('promptInput');
+        
+        // Check if browser supports speech recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isListening = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; // Stop after user stops speaking
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isListening = true;
+                micBtn.classList.add('listening');
+                micBtn.textContent = '🔴';
+                promptInput.placeholder = "Listening... Speak now!";
+            };
+
+            recognition.onresult = function(event) {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    promptInput.value = finalTranscript;
+                    // Automatically trigger generation after speech ends
+                    triggerGeneration();
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech recognition error", event.error);
+                resetMic();
+                promptInput.placeholder = "Error: " + event.error;
+            };
+
+            recognition.onend = function() {
+                resetMic();
+                promptInput.placeholder = "What can I help you with?";
+            };
+        } else {
+            micBtn.style.opacity = '0.4';
+            micBtn.style.cursor = 'not-allowed';
+            micBtn.title = "Voice input not supported in this browser.";
+        }
+
+        function resetMic() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            micBtn.textContent = '🎤';
+        }
+
+        micBtn.addEventListener('click', () => {
+            if (!recognition) return;
+            if (isListening) {
+                recognition.stop();
+                resetMic();
+            } else {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        });
+
+
         // ==================== LOAD REAL USER DATA ====================
         async function loadUserProfile() {
             try {
@@ -767,13 +850,9 @@
                 const data = await res.json();
                 availableModels = data.models || {};
                 
-                // Skip the "auto" model for the default selection and filter it out of ALL MODELS
                 const modelKeys = Object.keys(availableModels).filter(key => key !== 'auto');
-                
-                // Update model count
                 modelCountEl.textContent = `${modelKeys.length} models`;
 
-                // Select the first real model by default
                 if (modelKeys.length > 0) {
                     selectedModelId = modelKeys[0];
                     const first = availableModels[selectedModelId];
@@ -798,13 +877,9 @@
 
         function renderModelList(filter) {
             modelListContainer.innerHTML = "";
-            
-            // Filter out the 'auto' key so we don't double-add it
             const modelEntries = Object.entries(availableModels).filter(([key]) => key !== 'auto');
-            
             modelEntries.forEach(([key, model]) => {
                 if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
-                
                 const item = document.createElement('div');
                 item.className = `model-list-item${selectedModelId === key ? ' active' : ''}`;
                 item.innerHTML = `
@@ -832,7 +907,6 @@
             document.getElementById('detailContext').textContent = m.context || 'N/A';
             document.getElementById('detailImages').textContent = m.images ? 'Supported' : 'Not supported';
             document.getElementById('detailPrice').textContent = m.cost_per_request || 'Unknown';
-            
             renderBars('detailSpeed', m.speed || 5, 'filled-green');
             renderBars('detailIntel', m.intelligence || 5, 'filled-yellow');
             renderBars('detailCost', m.cost || 5, 'filled-red');
