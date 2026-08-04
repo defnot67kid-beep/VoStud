@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Final Production Server (Real Stats)
+Roblox AI Coder - Final Production Server (Auto Mode + Real Stats)
 Handles Real Google & Roblox Login, Sessions, and AI Generation
 """
 
@@ -233,6 +233,21 @@ async def logout(request: Request):
 
 # ==================== AI MODELS (EXPANDED FREE OPTIONS + REAL STATS) ====================
 MODELS = {
+    "auto": {
+        "name": "Auto",
+        "provider": "Dynamic Router",
+        "api": "auto",
+        "id": "auto",
+        "icon": "🌙",
+        "color": "#6b7280",
+        "context": "N/A",
+        "speed": 0,        # 0 = Adapts
+        "intelligence": 0, # 0 = Adapts
+        "cost": 0,         # 0 = Adapts
+        "images": True,
+        "cost_per_request": "Adapts",
+        "description": "Routes each request to the best model for the job — light models for quick edits, heavyweights for big builds."
+    },
     "groq-llama": {
         "name": "Llama 3.3 70B",
         "provider": "Groq [Free]",
@@ -241,9 +256,11 @@ MODELS = {
         "icon": "L",
         "color": "#7c3aed",
         "context": "128K tokens",
-        "speed": 10,        # Outputs massive 75 tokens/sec
-        "intelligence": 9,  # Top tier reasoning
-        "cost": 1,          # Completely free
+        "speed": 10,
+        "intelligence": 9,
+        "cost": 1,
+        "images": False,
+        "cost_per_request": "Free",
         "description": "Ultra-fast coding model via Groq's free tier. Blazing speed and intelligent enough for 95% of scripts."
     },
     "groq-mixtral": {
@@ -257,6 +274,8 @@ MODELS = {
         "speed": 8,
         "intelligence": 7,
         "cost": 1,
+        "images": False,
+        "cost_per_request": "Free",
         "description": "Excellent legacy model for logic and math-heavy scripts. Very fast and completely free."
     },
     "deepseek-v3": {
@@ -267,9 +286,11 @@ MODELS = {
         "icon": "D",
         "color": "#f59e0b",
         "context": "64K tokens",
-        "speed": 9,        # 60 tokens/sec
-        "intelligence": 10, # Rivals GPT-4o in coding benchmarks
-        "cost": 1,          # Free via OpenRouter
+        "speed": 9,
+        "intelligence": 10,
+        "cost": 1,
+        "images": False,
+        "cost_per_request": "Free",
         "description": "Open-source powerhouse. Easily rivals GPT-4 for coding and is completely free."
     },
     "gemini-2.0-flash": {
@@ -280,9 +301,11 @@ MODELS = {
         "icon": "G",
         "color": "#f97316",
         "context": "1M tokens",
-        "speed": 10,        # Extremely fast
+        "speed": 10,
         "intelligence": 7,
         "cost": 1,
+        "images": True,
+        "cost_per_request": "Free",
         "description": "Sub-second latency. Great for rapid prototyping, boilerplate, and utility scripts."
     },
     "qwen-2.5-coder": {
@@ -296,6 +319,8 @@ MODELS = {
         "speed": 8,
         "intelligence": 6,
         "cost": 1,
+        "images": False,
+        "cost_per_request": "Free",
         "description": "Tiny and lightning fast. Perfect for small Lua utility scripts and basic functions."
     },
     "mistral-7b-instruct": {
@@ -309,6 +334,8 @@ MODELS = {
         "speed": 7,
         "intelligence": 5,
         "cost": 1,
+        "images": False,
+        "cost_per_request": "Free",
         "description": "Lightweight, fast, and completely free. Good for quick drafts."
     },
     "gpt-4o": {
@@ -319,9 +346,11 @@ MODELS = {
         "icon": "G",
         "color": "#d946ef",
         "context": "128K tokens",
-        "speed": 8,         # Medium speed
-        "intelligence": 10, # Absolute peak intelligence
-        "cost": 8,          # Expensive per token
+        "speed": 8,
+        "intelligence": 10,
+        "cost": 8,
+        "images": True,
+        "cost_per_request": "$0.03 - $0.10",
         "description": "The gold standard for coding. Excellent for complex game logic and structure (Paid)."
     },
     "claude-3.5-sonnet": {
@@ -335,6 +364,8 @@ MODELS = {
         "speed": 7,
         "intelligence": 10,
         "cost": 6,
+        "images": True,
+        "cost_per_request": "$0.03 - $0.08",
         "description": "Incredible at following complex formatting rules (Paid)."
     }
 }
@@ -346,7 +377,7 @@ MAX_QUEUE_SIZE = 100
 # ==================== PYDANTIC MODELS ====================
 class GenerateRequest(BaseModel):
     prompt: str
-    model_id: str = "groq-llama"
+    model_id: str = "auto"
     destination: str = "ServerScriptService"
 
 class GenerateResponse(BaseModel):
@@ -422,7 +453,17 @@ async def generate_code(request: GenerateRequest):
     if not request.prompt:
         raise HTTPException(status_code=400, detail="No prompt provided")
     
-    model_config = MODELS.get(request.model_id)
+    # === AUTO MODE LOGIC ===
+    model_id = request.model_id
+    if model_id == "auto":
+        # Smart Router: Use the best free model for Roblox Lua
+        # If you have Groq set up, use Llama 3.3. Otherwise use DeepSeek via OpenRouter.
+        if GROQ_API_KEY:
+            model_id = "groq-llama"
+        else:
+            model_id = "deepseek-v3"
+            
+    model_config = MODELS.get(model_id)
     if not model_config:
         raise HTTPException(status_code=400, detail="Invalid model ID")
     
