@@ -443,7 +443,7 @@
                 <div class="arrow">→</div>
             </div>
 
-            <!-- User Profile (Dynamic) -->
+            <!-- User Profile -->
             <div class="user-profile" id="userProfile">
                 <div class="user-info">
                     <div class="pfp" id="userPfp" style="background:#6b7280;">?</div>
@@ -602,7 +602,6 @@
                 const emailEl = document.getElementById('userEmail');
 
                 if (data.logged_in) {
-                    // Deterministic color based on real email
                     function stringToColor(str) {
                         let hash = 0;
                         for (let i = 0; i < str.length; i++) {
@@ -625,7 +624,6 @@
                     nameEl.innerHTML = `${name.toUpperCase()} <span class="badge-free">Free</span>`;
                     emailEl.textContent = email;
                 } else {
-                    // Not logged in
                     pfpEl.style.background = '#6b7280';
                     pfpEl.textContent = '?';
                     nameEl.innerHTML = `Guest <span class="badge-free">Free</span>`;
@@ -635,9 +633,92 @@
                 console.error('Failed to load user profile:', error);
             }
         }
-
-        // Run profile loading immediately
         loadUserProfile();
+
+        // ==================== DYNAMICALLY LOAD MODELS ====================
+        let selectedModelId = "groq-llama";
+        let availableModels = {}; // Will be populated from server
+
+        const modelTrigger = document.getElementById('modelTrigger');
+        const triggerIcon = document.getElementById('triggerIcon');
+        const triggerName = document.getElementById('triggerName');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modelListContainer = document.getElementById('modelListContainer');
+        const detailPanel = document.getElementById('detailPanel');
+        const searchInput = document.getElementById('searchInput');
+
+        async function loadModels() {
+            try {
+                const res = await fetch('/models');
+                const data = await res.json();
+                availableModels = data.models || {};
+                
+                // Update the pill with the first model found
+                const firstKey = Object.keys(availableModels)[0];
+                if (firstKey) {
+                    selectedModelId = firstKey;
+                    const first = availableModels[firstKey];
+                    triggerIcon.textContent = first.icon || '?';
+                    triggerIcon.style.background = first.color || '#7c3aed';
+                    triggerName.textContent = first.name || 'Unknown';
+                }
+            } catch (error) {
+                console.error('Failed to load models:', error);
+            }
+        }
+
+        modelTrigger.addEventListener('click', () => {
+            if (Object.keys(availableModels).length === 0) return;
+            modalOverlay.classList.add('open'); 
+            renderModelList(""); 
+            updateDetailPanel(selectedModelId);
+        });
+
+        function closeModal() { modalOverlay.classList.remove('open'); }
+        modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+        function renderModelList(filter) {
+            modelListContainer.innerHTML = "";
+            Object.entries(availableModels).forEach(([key, model]) => {
+                if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
+                const item = document.createElement('div');
+                item.className = 'model-list-item';
+                item.innerHTML = `<div class="list-icon" style="background:${model.color || '#7c3aed'};">${model.icon || '?'}</div><div class="list-info"><div class="list-name">${model.name}</div><div class="list-desc">${model.provider}</div></div>`;
+                item.onmouseenter = () => updateDetailPanel(key);
+                item.onclick = () => { selectModel(key); closeModal(); };
+                modelListContainer.appendChild(item);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => { renderModelList(e.target.value); });
+
+        function updateDetailPanel(id) {
+            const m = availableModels[id]; if(!m) return;
+            document.getElementById('detailIcon').textContent = m.icon || '?';
+            document.getElementById('detailIcon').style.background = m.color || '#7c3aed';
+            document.getElementById('detailTitle').textContent = m.name;
+            document.getElementById('detailDesc').textContent = m.description || 'No description available.';
+            document.getElementById('detailProvider').textContent = m.provider || 'Unknown';
+            document.getElementById('detailContext').textContent = m.context || 'N/A';
+            renderBars('detailSpeed', m.speed || 5, 'filled-green');
+            renderBars('detailIntel', m.intelligence || 5, 'filled-yellow');
+            renderBars('detailCost', m.cost || 5, 'filled-red');
+        }
+
+        function renderBars(containerId, value, fillClass) {
+            const container = document.getElementById(containerId); container.innerHTML = "";
+            for (let i = 0; i < 10; i++) {
+                const seg = document.createElement('div'); seg.className = `bar-segment${i < value ? ' ' + fillClass : ''}`; container.appendChild(seg);
+            }
+        }
+
+        function selectModel(id) {
+            selectedModelId = id; const m = availableModels[id];
+            triggerIcon.textContent = m.icon || '?';
+            triggerIcon.style.background = m.color || '#7c3aed';
+            triggerName.textContent = m.name; 
+            renderModelList("");
+        }
 
         // ==================== PAIRING STATUS ====================
         const statusText = document.getElementById('statusText');
@@ -892,66 +973,6 @@
         generateBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate));
         renderDropdownGenerate();
 
-        // ==================== MODEL SELECTOR ====================
-        const modelTrigger = document.getElementById('modelTrigger');
-        const triggerIcon = document.getElementById('triggerIcon');
-        const triggerName = document.getElementById('triggerName');
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modelListContainer = document.getElementById('modelListContainer');
-        const detailPanel = document.getElementById('detailPanel');
-        const searchInput = document.getElementById('searchInput');
-
-        const availableModels = {
-            "groq-llama": { id: "groq-llama", name: "Llama 3.3 70B", provider: "Groq", icon: "L", color: "#7c3aed", desc: "Ultra-fast coding model via Groq.", speed: 10, intelligence: 9, cost: 1, context: "128K tokens" },
-            "groq-mixtral": { id: "groq-mixtral", name: "Mixtral 8x7B", provider: "Groq", icon: "M", color: "#2563eb", desc: "Instruct model via Groq.", speed: 8, intelligence: 7, cost: 1, context: "32K tokens" },
-            "ollama-qwen": { id: "ollama-qwen", name: "Qwen 2.5 Coder", provider: "Ollama", icon: "Q", color: "#f97316", desc: "Local 7B coder model.", speed: 4, intelligence: 7, cost: 10, context: "32K tokens" }
-        };
-
-        let selectedModelId = "groq-llama";
-
-        modelTrigger.addEventListener('click', () => {
-            modalOverlay.classList.add('open'); renderModelList(""); updateDetailPanel(selectedModelId);
-        });
-
-        function closeModal() { modalOverlay.classList.remove('open'); }
-        modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
-
-        function renderModelList(filter) {
-            modelListContainer.innerHTML = "";
-            Object.values(availableModels).forEach(model => {
-                if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
-                const item = document.createElement('div');
-                item.className = 'model-list-item';
-                item.innerHTML = `<div class="list-icon" style="background:${model.color};">${model.icon}</div><div class="list-info"><div class="list-name">${model.name}</div><div class="list-desc">${model.provider}</div></div>`;
-                item.onmouseenter = () => updateDetailPanel(model.id);
-                item.onclick = () => { selectModel(model.id); closeModal(); };
-                modelListContainer.appendChild(item);
-            });
-        }
-
-        searchInput.addEventListener('input', (e) => { renderModelList(e.target.value); });
-
-        function updateDetailPanel(id) {
-            const m = availableModels[id]; if(!m) return;
-            document.getElementById('detailIcon').textContent = m.icon; document.getElementById('detailIcon').style.background = m.color;
-            document.getElementById('detailTitle').textContent = m.name; document.getElementById('detailDesc').textContent = m.desc;
-            document.getElementById('detailProvider').textContent = m.provider; document.getElementById('detailContext').textContent = m.context;
-            renderBars('detailSpeed', m.speed, 'filled-green'); renderBars('detailIntel', m.intelligence, 'filled-yellow'); renderBars('detailCost', m.cost, 'filled-red');
-        }
-
-        function renderBars(containerId, value, fillClass) {
-            const container = document.getElementById(containerId); container.innerHTML = "";
-            for (let i = 0; i < 10; i++) {
-                const seg = document.createElement('div'); seg.className = `bar-segment${i < value ? ' ' + fillClass : ''}`; container.appendChild(seg);
-            }
-        }
-
-        function selectModel(id) {
-            selectedModelId = id; const m = availableModels[id];
-            triggerIcon.textContent = m.icon; triggerIcon.style.background = m.color;
-            triggerName.textContent = m.name; renderModelList("");
-        }
-
         // ==================== GENERATION ====================
         const promptInput = document.getElementById('promptInput');
         const messagesDiv = document.getElementById('messages');
@@ -1033,7 +1054,8 @@
             }
         });
 
-        selectModel("groq-llama");
+        // ==================== INIT ====================
+        loadModels(); // Fetch the models from the server first!
     </script>
 </body>
 </html>
