@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox AI Coder</title>
+    <title>Dashboard - Roblox AI Coder</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -44,12 +44,12 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: #6b7280; /* Default gray for Not Paired */
+            background: #6b7280;
             display: inline-block;
             transition: background 0.3s ease;
         }
-        .status-dot.online { background: #22c55e; } /* Green for Paired */
-        .status-dot.offline { background: #6b7280; } /* Gray for Not Paired */
+        .status-dot.online { background: #22c55e; }
+        .status-dot.offline { background: #6b7280; }
 
         /* ==================== MAIN CONTAINER ==================== */
         .main-wrapper {
@@ -512,11 +512,11 @@
             const res = await fetch('/status');
             if (res.ok) {
                 statusText.textContent = 'Paired';
-                statusDot.className = 'status-dot online'; // Green
+                statusDot.className = 'status-dot online';
             }
         } catch {
             statusText.textContent = 'Not Paired';
-            statusDot.className = 'status-dot offline'; // Gray
+            statusDot.className = 'status-dot offline';
         }
     }
     checkPairingStatus();
@@ -900,6 +900,17 @@
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             await triggerGeneration();
+        }
+    });
+
+    // ==================== PRE-FILL FROM HOME PAGE ====================
+    window.addEventListener('DOMContentLoaded', () => {
+        const prefill = sessionStorage.getItem('prefillPrompt');
+        if (prefill && promptInput) {
+            promptInput.value = prefill;
+            // Optional: Automatically trigger generation if you want
+            // triggerGeneration(); 
+            sessionStorage.removeItem('prefillPrompt');
         }
     });
 
