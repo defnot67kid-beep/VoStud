@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox AI Coder</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #09090b;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* ==================== TOP HEADER ==================== */
+        .top-bar {
+            position: absolute;
+            top: 24px;
+            width: 100%;
+            padding: 0 40px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .daily-spin-wrapper { position: relative; display: inline-block; }
+        .daily-spin-btn {
+            background: #8b5cf6; color: #ffffff; border: none;
+            padding: 8px 16px 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); font-family: inherit;
+        }
+        .daily-spin-btn:hover { background: #7c3aed; transform: scale(1.02); }
+        .spin-notification {
+            position: absolute; top: -4px; right: -4px; width: 14px; height: 14px;
+            background: #ef4444; border-radius: 50%; border: 2px solid #09090b; z-index: 2;
+        }
+        .spin-icon-wrapper { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%; flex-shrink: 0; }
+        .spin-icon-img { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
+        .spin-icon-img.looping { animation: infiniteSpin 3s linear infinite; }
+        @keyframes infiniteSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .status-pill { display: flex; align-items: center; gap: 8px; color: #9ca3af; font-size: 14px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; display: inline-block; transition: background 0.3s ease; }
+        .status-dot.online { background: #22c55e; }
+        .status-dot.offline { background: #ef4444; }
+
+        /* ==================== TOAST NOTIFICATION ==================== */
+        #toastContainer {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .toast {
+            background: #ef4444;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+            border: 1px solid #dc2626;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
+            max-width: 90vw;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ==================== MAIN CONTAINER ==================== */
+        .main-wrapper {
+            width: 100%; max-width: 800px; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: -60px; z-index: 1;
+            position: relative;
+        }
+
+        .hero-icon {
+            width: 50px; height: 50px;
+            margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .hero-icon svg { width: 100%; height: 100%; fill: none; stroke: #fff; stroke-width: 2; }
+
+        .hero-title {
+            font-size: 32px;
+            font-weight: 500;
+            margin-bottom: 30px;
+            color: #f3f4f6;
+        }
+
+        #messages {
+            width: 100%; max-height: 300px; overflow-y: auto;
+            display: none; flex-direction: column; gap: 16px; margin-bottom: 16px;
+        }
+        .msg { padding: 16px 20px; border-radius: 16px; background: #17171a; border: 1px solid #27272a; }
+        .msg.user { background: #1a1a2e; border-color: #2a2a3e; }
+        .msg .code-block {
+            background: #0a0a0b; padding: 14px; border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #a7f3d0;
+            margin-top: 10px; overflow-x: auto; white-space: pre-wrap; border: 1px solid #1a1a1a;
+        }
+
+        /* ==================== CHAT BOX ==================== */
+        .chat-box {
+            width: 100%; background: #17171a; border: 1px solid #27272a;
+            border-radius: 24px; padding: 18px 20px; display: flex; flex-direction: column;
+            gap: 12px; transition: border-color 0.2s ease; box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .chat-box:focus-within { border-color: #52525b; }
+        .chat-box.dragging {
+            border-color: #a855f7;
+            background: #1f1f24;
+        }
+
+        .chat-textarea {
+            width: 100%; background: transparent; border: none; color: #f3f4f6;
+            font-size: 17px; font-family: 'Inter', sans-serif; outline: none; resize: none; min-height: 32px; padding: 0 2px;
+        }
+        .chat-textarea::placeholder { color: #52525b; }
+
+        /* ==================== MODERN FILE LIST ==================== */
+        #fileListContainer {
+            display: none;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 8px;
+            margin-top: 8px;
+            width: 100%;
+        }
+        #fileListContainer.visible { display: flex; }
+
+        .file-preview-card {
+            width: 110px; 
+            height: 120px;
+            background: #1a1a1c;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            position: relative;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        .file-preview-card:hover {
+            transform: translateY(-4px);
+            border-color: #6366f1;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        }
+
+        .file-preview-img-area {
+            width: 100%;
+            height: 70px;
+            background: #121214;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #6b7280;
+        }
+        
+        .preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .file-info-area {
+            width: 100%;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            background: #1a1a1c;
+        }
+
+        .file-name {
+            font-size: 11px;
+            color: #f3f4f6;
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .file-size {
+            font-size: 10px;
+            color: #6b7280;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+        
+        .file-remove-btn {
+            position: absolute;
+            top: -7px;
+            right: -7px;
+            background: #17171a;
+            border: 1px solid #3f3f46;
+            color: #a1a1aa;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            z-index: 10;
+        }
+        .file-remove-btn:hover {
+            background: #27272a;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        /* Upload Progress Bar */
+        .upload-progress-container {
+            width: 100%;
+            height: 4px;
+            background: #27272a;
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+            display: none;
+        }
+        .upload-progress-container.active { display: block; }
+        .upload-progress-bar {
+            height: 100%;
+            background: #8b5cf6;
+            width: 0%;
+            transition: width 0.15s ease;
+        }
+
+        /* ==================== TOOLBAR ==================== */
+        .toolbar {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 4px;
+            border-top: 1px solid #27272a;
+            padding-top: 12px;
+        }
+        .toolbar-left { display: flex; align-items: center; gap: 6px; position: relative; }
+
+        /* ============================================================= */
+        /* ==================== DROPDOWN MENUS ========================== */
+        /* ============================================================= */
+        
+        .dropdown-menu {
+            position: absolute;
+            background: #17171a;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 180px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 50;
+        }
+        .dropdown-menu.open { display: flex; }
+
+        .dropdown-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; border-radius: 8px;
+            cursor: pointer; transition: 0.2s;
+            color: #a1a1aa; font-size: 14px;
+            position: relative;
+        }
+        .dropdown-item:hover { background: #27272a; color: #f3f4f6; }
+        .dropdown-item.active { background: #2a2a3e; color: #fff; }
+        .dropdown-item .icon { font-size: 18px; width: 24px; text-align: center; }
+        .dropdown-item .arrow { font-size: 12px; color: #52525b; margin-left: 8px; }
+
+        /* SPECIAL: + Button Dropdown (Points UP) */
+        #dropdownPlus {
+            bottom: 40px; /* Positions it ABOVE the button */
+            left: -10px;
+            width: 220px;
+        }
+
+        /* SPECIAL: Sub-Menu (Services) */
+        #dropdownServices {
+            top: -8px;
+            left: 100%;
+            margin-left: 4px;
+            width: 220px;
+            display: none;
+        }
+        #dropdownServices.open { display: flex; }
+
+        /* SPECIAL: Generate Button Dropdown (Points DOWN) */
+        #dropdownGenerate {
+            top: 40px;
+            left: -20px;
+            width: 180px;
+        }
+
+        /* ============================================================= */
+
+        .toolbar-divider { width: 1px; height: 18px; background: #27272a; margin: 0 4px; }
+
+        .tool-btn {
+            background: transparent; border: none; color: #a1a1aa; padding: 6px 10px; border-radius: 8px;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; transition: 0.2s;
+            font-family: inherit; position: relative;
+        }
+        .tool-btn:hover { background: #27272a; color: #f3f4f6; }
+        .tool-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .model-pill { display: flex; align-items: center; gap: 8px; background: #27272a; padding: 4px 12px 4px 6px; border-radius: 100px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .model-pill:hover { background: #3f3f46; border-color: #52525b; }
+        .model-icon { width: 20px; height: 20px; border-radius: 6px; background: #f97316; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+        .model-text { font-size: 13px; font-weight: 500; color: #f3f4f6; }
+        .model-caret { color: #a1a1aa; font-size: 12px; margin-left: 2px; }
+
+        .scale-toggle { display: flex; background: #09090b; border-radius: 100px; padding: 2px; border: 1px solid #27272a; }
+        .scale-btn { background: transparent; border: none; color: #a1a1aa; padding: 3px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        .scale-btn.active { background: #27272a; color: #f3f4f6; }
+
+        .toolbar-right { display: flex; align-items: center; gap: 12px; }
+        .microphone-btn { background: transparent; border: none; color: #a1a1aa; font-size: 18px; cursor: pointer; transition: 0.2s; padding: 4px; }
+        .microphone-btn:hover { color: #f3f4f6; }
+
+        /* ==================== FOOTER BUTTONS ==================== */
+        .footer-actions { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 24px; width: 100%; }
+        .action-btn {
+            background: transparent; border: 1px solid #27272a; color: #e5e7eb;
+            padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: 'Inter', sans-serif; letter-spacing: 0.2px;
+        }
+        .action-btn:hover { background: #1a1a1c; border-color: #3f3f46; color: #ffffff; }
+        .action-btn svg { stroke: #9ca3af; transition: stroke 0.2s ease; width: 16px; height: 16px; }
+        .action-btn:hover svg { stroke: #e5e7eb; }
+
+        /* ==================== MODAL OVERLAY ==================== */
+        #modalOverlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center; z-index: 999;
+        }
+        #modalOverlay.open { display: flex; }
+
+        .modal-box {
+            width: 850px; max-width: 90vw; height: 550px; max-height: 80vh;
+            background: #17171a; border: 1px solid #27272a; border-radius: 20px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.9); display: flex; flex-direction: row; overflow: hidden; position: relative;
+        }
+        .close-modal { position: absolute; top: 20px; right: 24px; background: none; border: none; color: #52525b; font-size: 24px; cursor: pointer; }
+        .modal-left { width: 55%; padding: 24px; border-right: 1px solid #27272a; display: flex; flex-direction: column; overflow-y: auto; }
+        .modal-right { width: 45%; padding: 30px; display: flex; flex-direction: column; background: #121214; }
+
+        .search-input {
+            width: 100%; background: #09090b; border: 1px solid #27272a; border-radius: 12px;
+            padding: 12px 16px; color: #fff; font-size: 14px; outline: none; font-family: inherit; margin-bottom: 16px;
+        }
+        .search-input:focus { border-color: #52525b; }
+        .search-input::placeholder { color: #52525b; }
+
+        .filter-row { display: flex; gap: 8px; margin-bottom: 16px; }
+        .filter-btn { background: transparent; border: 1px solid #27272a; color: #a1a1aa; padding: 6px 16px; border-radius: 100px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .filter-btn:hover { background: #27272a; color: #fff; }
+
+        .section-label { font-size: 11px; color: #6b7280; font-weight: 600; margin: 12px 0 8px 0; letter-spacing: 0.5px; }
+        .model-list-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: 0.2s; margin-bottom: 4px; }
+        .model-list-item:hover { background: #27272a; }
+        .list-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .list-info { display: flex; flex-direction: column; flex: 1; }
+        .list-name { font-size: 14px; font-weight: 500; }
+        .list-desc { font-size: 12px; color: #6b7280; }
+
+        .detail-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .detail-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; }
+        .detail-title { font-size: 20px; font-weight: 600; }
+        .detail-desc { font-size: 14px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.5; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #a1a1aa; }
+        .bar-container { display: flex; gap: 3px; margin-bottom: 16px; }
+        .bar-segment { width: 14px; height: 8px; border-radius: 2px; background: #27272a; }
+        .bar-segment.filled-green { background: #22c55e; }
+        .bar-segment.filled-yellow { background: #eab308; }
+        .bar-segment.filled-red { background: #ef4444; }
+        .detail-divider { border: none; border-top: 1px solid #27272a; margin: 16px 0; }
+        .detail-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; color: #6b7280; }
+        .detail-row span:last-child { color: #fff; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <div class="daily-spin-wrapper">
+        <button class="daily-spin-btn" id="spinBtn">
+            <div class="spin-icon-wrapper">
+                <img src="Images/Icons/Spins.png" alt="Spin" class="spin-icon-img" id="spinIcon">
+            </div>
+            Daily Spin!
+        </button>
+        <div class="spin-notification"></div>
+    </div>
+
+    <div class="status-pill">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Not Paired</span>
+    </div>
+</div>
+
+<!-- ==================== TOAST NOTIFICATION ==================== -->
+<div id="toastContainer">
+    <div class="toast" id="toastMessage">⚠️ You can only upload up to 5 files.</div>
+</div>
+
+<!-- MAIN WRAPPER -->
+<div class="main-wrapper">
+    
+    <div id="messages"></div>
+
+    <!-- Hero Section -->
+    <div id="heroArea" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <div class="hero-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" stroke="#52525b"/>
+                <circle cx="12" cy="12" r="4" stroke="#fff"/>
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#52525b"/>
+            </svg>
+        </div>
+        <div class="hero-title">Where do we start?</div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+        
+        <!-- ==================== MODERN FILE LIST ==================== -->
+        <div id="fileListContainer"></div>
+        <div class="upload-progress-container" id="progressContainer">
+            <div class="upload-progress-bar" id="progressBar"></div>
+        </div>
+
+        <textarea class="chat-textarea" id="promptInput" rows="1" placeholder="What can I help you with?"></textarea>
+        
+        <div class="toolbar">
+            <div class="toolbar-left">
+                
+                <!-- ======== + BUTTON DROPDOWN (NESTED MENU) ======== -->
+                <div style="position: relative;">
+                    <button class="tool-btn" id="plusBtn">+</button>
+                    <div class="dropdown-menu" id="dropdownPlus">
+                        <!-- Services Item (Hover/Click to reveal sub-menu) -->
+                        <div class="dropdown-item" id="servicesParent">
+                            <span><span class="icon">📁</span> Services</span>
+                            <span class="arrow">▶</span>
+                        </div>
+                        
+                        <!-- Sub-Menu: Services List -->
+                        <div class="dropdown-menu" id="dropdownServices">
+                            <!-- Items injected via JS -->
+                        </div>
+
+                        <!-- Add Files Item (Triggers hidden file input) -->
+                        <div class="dropdown-item" id="addFilesItem">
+                            <span><span class="icon">➕</span> Add Files</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======== GENERATE BUTTON DROPDOWN ======== -->
+                <div style="position: relative;">
+                    <button class="tool-btn" id="generateBtn">
+                        <span id="generateIcon">∞</span> 
+                        <span id="generateLabel">Generate</span> 
+                        <span style="font-size:10px; color:#52525b;">▼</span>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownGenerate">
+                        <!-- Items injected via JS -->
+                    </div>
+                </div>
+                
+                <div class="toolbar-divider"></div>
+
+                <div class="model-pill" id="modelTrigger">
+                    <div class="model-icon" id="triggerIcon" style="background:#7c3aed;">L</div>
+                    <span class="model-text" id="triggerName">Llama 3.3 70B</span>
+                    <span class="model-caret">▼</span>
+                </div>
+
+                <div class="scale-toggle">
+                    <button class="scale-btn">R6</button>
+                    <button class="scale-btn active">R15</button>
+                </div>
+
+                <button class="tool-btn">✦</button>
+            </div>
+
+            <div class="toolbar-right">
+                <button class="microphone-btn">🎤</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-actions">
+        <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 22v-4M4 12H2M22 12h-2M19.07 4.93l-2.83 2.83M4.93 19.07l2.83-2.83M19.07 19.07l-2.83-2.83M4.93 4.93l2.83 2.83"/><circle cx="12" cy="12" r="4"/></svg>
+            Get the Plugin
+        </button>
+        <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            Integrations
+        </button>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalOverlay">
+    <div class="modal-box">
+        <button class="close-modal" onclick="closeModal()">✕</button>
+        <div class="modal-left">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search models...">
+            <div class="filter-row">
+                <button class="filter-btn" style="background:#27272a; border-color:#52525b; color:#fff;">All providers</button>
+                <button class="filter-btn">Popularity</button>
+            </div>
+            <div class="section-label">ALL MODELS</div>
+            <div id="modelListContainer"></div>
+        </div>
+        <div class="modal-right" id="detailPanel">
+            <div class="detail-header">
+                <div class="detail-icon" id="detailIcon" style="background:#7c3aed;">L</div>
+                <div class="detail-title" id="detailTitle">Llama 3.3 70B</div>
+            </div>
+            <div class="detail-desc" id="detailDesc">Ultra-fast coding model via Groq. Great for general scripting.</div>
+            <div class="stat-row"><span>Speed</span></div>
+            <div class="bar-container" id="detailSpeed"></div>
+            <div class="stat-row"><span>Intelligence</span></div>
+            <div class="bar-container" id="detailIntel"></div>
+            <div class="stat-row"><span>Cost</span></div>
+            <div class="bar-container" id="detailCost"></div>
+            <hr class="detail-divider">
+            <div class="detail-row"><span>Context</span><span id="detailContext">128K tokens</span></div>
+            <div class="detail-row"><span>Provider</span><span id="detailProvider">Groq</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== CONSTANTS ====================
+    const MAX_FILES = 5; 
+    const MAX_SAFE_SIZE = 10 * 1024; // 10 KB per file (slice limit)
+    const MAX_CONTEXT_BUDGET = 20000; // Hard limit on total character count sent to AI
+    const ALLOWED_EXTENSIONS = ['.lua', '.luau', '.txt', '.json', '.rbxm', '.rbxmx'];
+
+    // ==================== TOAST NOTIFICATION ====================
+    const toastElement = document.getElementById('toastMessage');
+    let toastTimeout = null;
+
+    function showToast(message) {
+        toastElement.textContent = message || "⚠️ Error.";
+        toastElement.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toastElement.classList.remove('show');
+            toastTimeout = null;
+        }, 3000);
+    }
+
+    // ==================== HIDDEN FILE INPUT & DROP ====================
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
+    const chatBox = document.getElementById('chatBox');
+    const fileListContainer = document.getElementById('fileListContainer');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    let uploadedFiles = []; 
+    let isGenerationLocked = false;
+
+    // ==================== DRAG & DROP ====================
+    chatBox.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        chatBox.classList.add("dragging");
+    });
+
+    chatBox.addEventListener("dragleave", () => {
+        chatBox.classList.remove("dragging");
+    });
+
+    chatBox.addEventListener("drop", (e) => {
+        e.preventDefault();
+        chatBox.classList.remove("dragging");
+        if (e.dataTransfer.files.length > 0) {
+            handleFiles(e.dataTransfer.files);
+        }
+    });
+
+    // ==================== ICON & EXTENSION HELPERS ====================
+    function getFileExtension(filename) {
+        return filename.substring(filename.lastIndexOf('.')).toLowerCase();
+    }
+
+    function isAllowedFile(filename) {
+        return ALLOWED_EXTENSIONS.includes(getFileExtension(filename));
+    }
+
+    function getFileIcon(file) {
+        if (file.type.startsWith("image/")) return "🖼️";
+        if (file.name.endsWith(".lua") || file.name.endsWith(".luau")) return "📜";
+        if (file.name.endsWith(".rbxm") || file.name.endsWith(".rbx")) return "📦";
+        return "📄";
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // ==================== SHOW UPLOAD PROGRESS ====================
+    function simulateProgress(callback) {
+        progressContainer.classList.add('active');
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 100) progress = 100;
+            progressBar.style.width = progress + '%';
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                    if (callback) callback();
+                }, 200);
+            }
+        }, 100);
+    }
+
+    // ==================== HANDLE FILES (OPTIMIZED) ====================
+    function handleFiles(fileList) {
+        if (isGenerationLocked) return;
+
+        const newFiles = Array.from(fileList);
+
+        // Limit: 5 files total
+        if (uploadedFiles.length + newFiles.length > MAX_FILES) {
+            showToast(`⚠️ You can only upload up to ${MAX_FILES} files.`);
+            return;
+        }
+
+        // Filter out unsupported file types
+        const validFiles = newFiles.filter(f => isAllowedFile(f.name));
+        if (validFiles.length !== newFiles.length) {
+            showToast(`⚠️ Only .lua, .luau, .txt, .json, .rbxm, and .rbxmx files are allowed.`);
+        }
+
+        if (validFiles.length === 0) return;
+
+        let processedCount = 0;
+
+        simulateProgress(() => {
+            renderFilePreviews();
+        });
+
+        for (let file of validFiles) {
+            
+            // OPTIMIZATION: Slice the first 10KB ONLY. Never read the whole file.
+            const blob = file.slice(0, MAX_SAFE_SIZE);
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                let content = event.target.result;
+                let previewUrl = null;
+
+                // OPTIMIZATION: If it's an image, create a local object URL for the UI.
+                // NEVER load the whole image as Base64 into memory.
+                if (file.type.startsWith("image/")) {
+                    previewUrl = URL.createObjectURL(file);
+                }
+
+                uploadedFiles.push({
+                    name: file.name,
+                    size: formatFileSize(file.size),
+                    rawBytes: file.size,
+                    type: file.type,
+                    previewUrl: previewUrl, // Local Object URL
+                    textContent: file.type.startsWith("text/") || file.name.endsWith(".lua") 
+                        ? content 
+                        : `[Binary File: ${file.name} - ${formatFileSize(file.size)}]`
+                });
+
+                processedCount++;
+                if (processedCount === validFiles.length) {
+                    renderFilePreviews();
+                    setTimeout(() => {
+                        progressContainer.classList.remove("active");
+                        progressBar.style.width = "0%";
+                    }, 300);
+                }
+            };
+
+            // If image, read as generic text so we get the metadata only, or just handle differently
+            // We will read text files as text, images as text (metadata), and binary as text.
+            // Since we sliced it, we just let readAsText handle it safely.
+            reader.readAsText(blob);
+        }
+    }
+
+    // ==================== + BUTTON DROPDOWN ====================
+    const plusBtn = document.getElementById('plusBtn');
+    const dropdownPlus = document.getElementById('dropdownPlus');
+    const dropdownServices = document.getElementById('dropdownServices');
+    const servicesParent = document.getElementById('servicesParent');
+    const addFilesItem = document.getElementById('addFilesItem');
+    let selectedDestination = "ServerScriptService";
+
+    const serviceOptions = [
+        { id: "ServerScriptService", label: "ServerScriptService", icon: "⚙️" },
+        { id: "ReplicatedStorage", label: "ReplicatedStorage", icon: "📦" },
+        { id: "StarterGui", label: "StarterGui", icon: "🖥️" },
+        { id: "StarterPlayer", label: "StarterPlayer", icon: "🧑" },
+        { id: "Workspace", label: "Workspace", icon: "🌍" },
+        { id: "ServerStorage", label: "ServerStorage", icon: "🗄️" }
+    ];
+
+    function renderDropdownServices() {
+        dropdownServices.innerHTML = "";
+        serviceOptions.forEach(opt => {
+            const item = document.createElement('div');
+            item.className = `dropdown-item${selectedDestination === opt.id ? ' active' : ''}`;
+            item.innerHTML = `<span class="icon">${opt.icon}</span> ${opt.label}`;
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectedDestination = opt.id;
+                renderDropdownServices();
+                closeDropdown(dropdownPlus);
+                closeDropdown(dropdownServices);
+            });
+            dropdownServices.appendChild(item);
+        });
+    }
+
+    function toggleDropdown(e, menu) {
+        e.stopPropagation();
+        const isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open'));
+        if (!isOpen) menu.classList.add('open');
+    }
+
+    function closeDropdown(menu) {
+        menu.classList.remove('open');
+    }
+
+    plusBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownPlus));
+
+    servicesParent.addEventListener('mouseenter', () => {
+        if (dropdownPlus.classList.contains('open')) {
+            dropdownServices.classList.add('open');
+        }
+    });
+
+    dropdownServices.addEventListener('mouseleave', () => {
+        dropdownServices.classList.remove('open');
+    });
+
+    // ==================== ADD FILES CLICK ====================
+    addFilesItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+        closeDropdown(dropdownPlus);
+        closeDropdown(dropdownServices);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFiles(e.target.files);
+        }
+        e.target.value = '';
+    });
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open'));
+    });
+
+    renderDropdownServices();
+
+    // ==================== RENDER PREVIEWS ====================
+    function renderFilePreviews() {
+        fileListContainer.innerHTML = "";
+        if (uploadedFiles.length === 0) {
+            fileListContainer.classList.remove('visible');
+            return;
+        }
+        fileListContainer.classList.add('visible');
+
+        uploadedFiles.forEach((fileData, index) => {
+            const card = document.createElement('div');
+            card.className = 'file-preview-card';
+            
+            let previewHtml = '';
+            if (fileData.previewUrl) {
+                previewHtml = `<img class="preview-img" src="${fileData.previewUrl}" alt="${fileData.name}">`;
+            } else {
+                previewHtml = `<span style="font-size:32px;">${getFileIcon({name: fileData.name, type: fileData.type})}</span>`;
+            }
+
+            card.innerHTML = `
+                <div class="file-preview-img-area">
+                    ${previewHtml}
+                </div>
+                <div class="file-info-area">
+                    <div class="file-name">${fileData.name}</div>
+                    <div class="file-size">${fileData.size}</div>
+                </div>
+                <div class="file-remove-btn" data-index="${index}">✕</div>
+            `;
+            fileListContainer.appendChild(card);
+        });
+
+        document.querySelectorAll('.file-remove-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const index = parseInt(this.getAttribute('data-index'));
+                uploadedFiles.splice(index, 1);
+                renderFilePreviews();
+            });
+        });
+    }
+
+
+    // ==================== GENERATE DROPDOWN ====================
+    const generateBtn = document.getElementById('generateBtn');
+    const dropdownGenerate = document.getElementById('dropdownGenerate');
+    const generateIcon = document.getElementById('generateIcon');
+    const generateLabel = document.getElementById('generateLabel');
+    let selectedMode = "Generate";
+
+    const modeOptions = [
+        { id: "Generate", label: "Generate", icon: "∞" },
+        { id: "Ask", label: "Ask", icon: "❓" },
+        { id: "Plan", label: "Plan", icon: "📝" }
+    ];
+
+    function renderDropdownGenerate() {
+        dropdownGenerate.innerHTML = "";
+        modeOptions.forEach(opt => {
+            const item = document.createElement('div');
+            item.className = `dropdown-item${selectedMode === opt.id ? ' active' : ''}`;
+            item.innerHTML = `<span class="icon-sm">${opt.icon}</span> ${opt.label}`;
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectedMode = opt.id;
+                generateIcon.textContent = opt.icon;
+                generateLabel.textContent = opt.label;
+                renderDropdownGenerate();
+                closeDropdown(dropdownGenerate);
+            });
+            dropdownGenerate.appendChild(item);
+        });
+    }
+
+    generateBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate));
+    renderDropdownGenerate();
+
+    // ==================== SPIN LOGIC ====================
+    const spinIcon = document.getElementById('spinIcon');
+    spinIcon.classList.add('looping');
+
+    // ==================== MODEL DATA ====================
+    const availableModels = {
+        "groq-llama": { id: "groq-llama", name: "Llama 3.3 70B", provider: "Groq", icon: "L", color: "#7c3aed", desc: "Ultra-fast coding model via Groq's free tier. Great for general scripting.", speed: 10, intelligence: 9, cost: 1, context: "128K tokens" },
+        "groq-mixtral": { id: "groq-mixtral", name: "Mixtral 8x7B", provider: "Groq", icon: "M", color: "#2563eb", desc: "Instruct model via Groq. Great for logic and math-heavy scripts.", speed: 8, intelligence: 7, cost: 1, context: "32K tokens" },
+        "ollama-qwen": { id: "ollama-qwen", name: "Qwen 2.5 Coder", provider: "Ollama (Local)", icon: "Q", color: "#f97316", desc: "Local 7B coder model. Runs completely offline on your PC.", speed: 4, intelligence: 7, cost: 10, context: "32K tokens" }
+    };
+
+    let selectedModelId = "groq-llama";
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    document.getElementById('modelTrigger').addEventListener('click', () => {
+        modalOverlay.classList.add('open'); renderModelList(""); updateDetailPanel(selectedModelId);
+    });
+
+    function closeModal() { modalOverlay.classList.remove('open'); }
+    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+    function renderModelList(filter) {
+        const container = document.getElementById('modelListContainer'); container.innerHTML = "";
+        Object.values(availableModels).forEach(model => {
+            if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
+            const item = document.createElement('div');
+            item.className = 'model-list-item';
+            item.innerHTML = `<div class="list-icon" style="background:${model.color};">${model.icon}</div><div class="list-info"><div class="list-name">${model.name}</div><div class="list-desc">${model.provider}</div></div>`;
+            item.onmouseenter = () => updateDetailPanel(model.id);
+            item.onclick = () => { selectModel(model.id); closeModal(); };
+            container.appendChild(item);
+        });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => { renderModelList(e.target.value); });
+
+    function updateDetailPanel(id) {
+        const m = availableModels[id]; if(!m) return;
+        document.getElementById('detailIcon').textContent = m.icon; document.getElementById('detailIcon').style.background = m.color;
+        document.getElementById('detailTitle').textContent = m.name; document.getElementById('detailDesc').textContent = m.desc;
+        document.getElementById('detailProvider').textContent = m.provider; document.getElementById('detailContext').textContent = m.context;
+        renderBars('detailSpeed', m.speed, 'filled-green'); renderBars('detailIntel', m.intelligence, 'filled-yellow'); renderBars('detailCost', m.cost, 'filled-red');
+    }
+
+    function renderBars(containerId, value, fillClass) {
+        const container = document.getElementById(containerId); container.innerHTML = "";
+        for (let i = 0; i < 10; i++) {
+            const seg = document.createElement('div'); seg.className = `bar-segment${i < value ? ' ' + fillClass : ''}`; container.appendChild(seg);
+        }
+    }
+
+    function selectModel(id) {
+        selectedModelId = id; const m = availableModels[id];
+        document.getElementById('triggerIcon').textContent = m.icon; document.getElementById('triggerIcon').style.background = m.color;
+        document.getElementById('triggerName').textContent = m.name; renderModelList("");
+    }
+
+    // ==================== GENERATION LOGIC ====================
+    const promptInput = document.getElementById('promptInput');
+    const messagesDiv = document.getElementById('messages');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+
+    promptInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
+
+    function addMessage(text, type) {
+        messagesDiv.style.display = 'flex';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${type}`;
+        msgDiv.innerHTML = `<div>${text}</div>`;
+        messagesDiv.appendChild(msgDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function addCodeBlock(code, type) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${type}`;
+        msgDiv.innerHTML = `<pre class="code-block">${escapeHtml(code)}</pre>`;
+        messagesDiv.appendChild(msgDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function triggerGeneration() {
+        const prompt = promptInput.value.trim(); 
+        if (!prompt) return;
+
+        addMessage(prompt, 'user');
+        promptInput.value = ''; promptInput.style.height = 'auto';
+
+        // ==================== OPTIMIZATION: CONTEXT BUDGET ====================
+        let finalFileStrings = [];
+        let currentCharCount = 0;
+
+        for (let i = 0; i < uploadedFiles.length; i++) {
+            const fileData = uploadedFiles[i];
+            let content = fileData.textContent;
+
+            // Estimate if we have room in the budget
+            if (currentCharCount + content.length > MAX_CONTEXT_BUDGET) {
+                const remaining = MAX_CONTEXT_BUDGET - currentCharCount;
+                if (remaining > 0) {
+                    content = content.substring(0, remaining) + "\n\n... [TRUNCATED DUE TO TOKEN BUDGET]";
+                    addMessage(`⚠️ Hit context budget. "${fileData.name}" was partially truncated.`, 'ai');
+                    finalFileStrings.push(`--- File: ${fileData.name} (PARTIAL) ---\n${content}`);
+                    currentCharCount += remaining;
+                } else {
+                    addMessage(`⚠️ Context budget full. Skipping "${fileData.name}".`, 'ai');
+                }
+                break; // Stop processing further files
+            } else {
+                finalFileStrings.push(`--- File: ${fileData.name} ---\n${content}`);
+                currentCharCount += content.length;
+            }
+        }
+
+        const combinedFileContent = finalFileStrings.join('\n\n');
+        const payload = { prompt, destination: selectedDestination, model_id: selectedModelId };
+        if (combinedFileContent) payload.fileContent = combinedFileContent;
+
+        isGenerationLocked = true;
+
+        try {
+            const response = await fetch('http://localhost:8000/generate', { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) 
+            });
+            const data = await response.json();
+            
+            if (response.ok) {
+                addMessage(`✅ Generated via ${data.model_used}`, 'ai');
+                addCodeBlock(data.code, 'ai');
+                await fetch('http://localhost:8000/send-to-roblox', { 
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        code: data.code, 
+                        scriptName: prompt.slice(0, 30).replace(/\s/g, '_') + '_Script',
+                        destination: selectedDestination 
+                    }) 
+                });
+                addMessage(`📦 Script queued for Roblox!`, 'ai');
+            } else {
+                addMessage(`❌ Error: ${data.detail || 'Unknown error'}`, 'ai');
+            }
+        } catch (error) {
+            addMessage(`❌ Connection Error: ${error.message}`, 'ai');
+        } finally {
+            isGenerationLocked = false;
+        }
+    }
+
+    function escapeHtml(text) { return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    generateBtn.addEventListener('click', async (e) => {
+        if (dropdownGenerate.classList.contains('open')) return;
+        await triggerGeneration();
+    });
+
+    promptInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            await triggerGeneration();
+        }
+    });
+
+    async function checkStatus() {
+        try {
+            const res = await fetch('http://localhost:8000/status');
+            if (res.ok) { statusText.textContent = 'Connected'; statusDot.className = 'status-dot online'; }
+        } catch { statusText.textContent = 'Not Paired'; statusDot.className = 'status-dot offline'; }
+    }
+    checkStatus(); setInterval(checkStatus, 5000);
+    selectModel("groq-llama");
+</script>
+</body>
+</html>
