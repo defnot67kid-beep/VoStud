@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Full Server (Deduped Models, Auto-Healing, Filename Match)
+Roblox AI Coder - Full Server (Fixed OpenRouter Middle-Out Transform)
 """
 
 import os
@@ -68,11 +68,10 @@ def generate_pairing_code():
     return str(random.randint(100000, 999999))
 
 # ==================== MODEL QUOTA & LOCKING SYSTEM ====================
-# Stores locks: model_id -> {"locked": bool, "unlock_time": timestamp}
 model_locks = {}
 
 def lock_model(model_id):
-    model_locks[model_id] = {"locked": True, "unlock_time": time.time() + 600} # Lock for 10 mins
+    model_locks[model_id] = {"locked": True, "unlock_time": time.time() + 600}
     logger.warning(f"🔒 Locked model {model_id} due to failure. Retrying in 10 minutes.")
 
 def unlock_model(model_id):
@@ -88,7 +87,7 @@ def is_model_locked(model_id):
         return False
     return True
 
-# ==================== MODELS (WITH DETAILS & EXACT FILENAMES) ====================
+# ==================== MODELS ====================
 MODELS = {
     "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
     "groq-mixtral": {"name": "Mixtral 8x7B", "provider": "Groq / Mistral", "api": "groq", "id": "mixtral-8x7b-32768", "image": "/images/models/grok.png", "context": "32K tokens", "speed": 8, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Excellent legacy model."},
@@ -295,9 +294,17 @@ def generate_with_groq(model_id, prompt):
 def generate_with_openrouter(model_id, prompt):
     if not OPENROUTER_API_KEY: raise Exception("OPENROUTER_API_KEY missing.")
     headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
-    payload = {"model": model_id, "messages": [{"role": "system", "content": "You are a Roblox Lua expert. Output ONLY Lua code."}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 3000}
+    # FIX: Added "transforms" so OpenRouter doesn't reject standard requests
+    payload = {
+        "model": model_id, 
+        "messages": [{"role": "system", "content": "You are a Roblox Lua expert. Output ONLY Lua code."}, {"role": "user", "content": prompt}], 
+        "temperature": 0.2, 
+        "max_tokens": 3000,
+        "transforms": ["middle-out"] 
+    }
     response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=60)
     if response.status_code != 200:
+        # ONLY lock the model if it's a genuine API failure (404 = model dead, 429 = rate limit)
         if response.status_code == 404 or response.status_code == 429:
             raise Exception(f"OpenRouter Error: Model Unavailable (Code {response.status_code})")
         raise Exception(f"OpenRouter Error: {response.text}")
@@ -337,8 +344,10 @@ async def generate_code(request: GenerateRequest):
         
     except Exception as e:
         logger.error(f"Generation failed for {model_id}: {str(e)}")
-        # Lock the broken model
-        lock_model(model_id)
+        
+        # Prevent locking for temporary network timeouts
+        if "ConnectionError" not in str(e) and "Timeout" not in str(e):
+            lock_model(model_id)
         
         # Try the ultimate fallback (Groq Llama)
         try:
@@ -370,7 +379,7 @@ async def acknowledge_code(request: dict):
 
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v4.2.0 - Model Locking & Auto-Healing")
+    logger.info("🚀 Roblox AI Coder v4.2.0 - Fixed OpenRouter")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
