@@ -14,6 +14,8 @@ from collections import deque
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 load_dotenv()
@@ -75,6 +77,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ==================== SERVE STATIC FILES ====================
+# This mounts your 'web' folder so the browser can access /static/style.css etc.
+app.mount("/static", StaticFiles(directory="web"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_web_ui():
+    html_path = os.path.join("web", "index.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Index.html not found. Make sure 'web/index.html' exists.</h1>")
+
 # ==================== HELPERS ====================
 def clean_code(code: str) -> str:
     if not code: return ""
@@ -124,10 +139,6 @@ def generate_with_openrouter(model_id: str, prompt: str) -> str:
     return clean_code(response.json()["choices"][0]["message"]["content"])
 
 # ==================== ENDPOINTS ====================
-@app.get("/")
-async def root():
-    return {"name": "Roblox AI Coder", "version": "3.0.0", "status": "online"}
-
 @app.get("/status", response_model=StatusResponse)
 async def get_status():
     return StatusResponse(status="online", queue_size=len(code_queue), models_loaded=len(MODELS))
@@ -195,6 +206,6 @@ if __name__ == "__main__":
     logger.info("=" * 50)
     logger.info("🚀 Roblox AI Coder v3.0")
     logger.info(f"📊 Loaded {len(MODELS)} models")
-    logger.info("🌐 Running on port 8000")
+    logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
