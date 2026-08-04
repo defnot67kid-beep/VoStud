@@ -1,6 +1,6 @@
 """
-Roblox AI Coder - Final Fix (Added itsdangerous)
-Handles Google & Roblox Login via manual OAuth URLs
+Roblox AI Coder - Fixed OAuth (Exact Redirect URIs)
+Handles Google & Roblox Login separately
 """
 
 import os
@@ -35,11 +35,10 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 ROBLOX_CLIENT_ID = os.getenv("ROBLOX_CLIENT_ID")
 ROBLOX_CLIENT_SECRET = os.getenv("ROBLOX_CLIENT_SECRET")
 
-# Generate a random secret if the user hasn't set one yet, to prevent crash on Render
 SESSION_SECRET = os.getenv("SESSION_SECRET")
 if not SESSION_SECRET:
     SESSION_SECRET = secrets.token_urlsafe(32)
-    logger.warning("⚠️ SESSION_SECRET not found in environment. Generated a random one. Logins will reset on restart.")
+    logger.warning("⚠️ SESSION_SECRET not found. Generated a random one.")
 
 # ==================== FASTAPI SETUP ====================
 app = FastAPI(title="Roblox AI Coder", version="3.0.0")
@@ -52,7 +51,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add Session Middleware
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 
 # ==================== SERVE STATIC FILES ====================
@@ -94,15 +92,14 @@ async def serve_dashboard(request: Request):
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Dashboard page not found.</h1>")
 
-# ==================== MANUAL OAUTH REDIRECTS ====================
-
+# ==================== GOOGLE OAUTH ====================
 @app.get('/auth/google')
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
         return HTMLResponse(content="<h1>Google Login not configured.</h1>")
     
-    # Build the Google OAuth URL manually
-    redirect_uri = str(request.base_url) + "auth/callback?provider=google"
+    # EXACT URL MATCH
+    redirect_uri = str(request.base_url) + "auth/google/callback"
     auth_url = (
         "https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={GOOGLE_CLIENT_ID}&"
@@ -112,13 +109,56 @@ async def login_google(request: Request):
     )
     return RedirectResponse(url=auth_url)
 
+@app.get('/auth/google/callback')
+async def google_callback(request: Request):
+    code = request.query_params.get('code')
+    if not code:
+        return HTMLResponse(content="<h1>Error: Missing authorization code</h1>")
+
+    try:
+        token_url = "https://oauth2.googleapis.com/token"
+        redirect_uri = str(request.base_url) + "auth/google/callback"
+        payload = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri
+        }
+        resp = requests.post(token_url, data=payload)
+        if resp.status_code != 200:
+            return HTMLResponse(content="<h1>Failed to get Google token.</h1>")
+        
+        token_data = resp.json()
+        access_token = token_data.get("access_token")
+        
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_resp = requests.get("https://www.googleapis.com/oauth2/v1/userinfo", headers=headers)
+        if user_resp.status_code == 200:
+            user_info = user_resp.json()
+            request.session['user'] = {
+                'id': user_info['id'],
+                'name': user_info['name'],
+                'email': user_info['email'],
+                'provider': 'google'
+            }
+            logger.info(f"User logged in via Google: {user_info['email']}")
+            return RedirectResponse(url="/dashboard")
+
+        return HTMLResponse(content="<h1>Failed to get Google user info.</h1>")
+
+    except Exception as e:
+        logger.error(f"Google Callback Error: {str(e)}")
+        return HTMLResponse(content=f"<h1>Authentication Error: {str(e)}</h1>")
+
+# ==================== ROBLOX OAUTH ====================
 @app.get('/auth/roblox')
 async def login_roblox(request: Request):
     if not ROBLOX_CLIENT_ID:
         return HTMLResponse(content="<h1>Roblox Login not configured.</h1>")
     
-    # Build the Roblox OAuth URL manually
-    redirect_uri = str(request.base_url) + "auth/callback?provider=roblox"
+    # EXACT URL MATCH
+    redirect_uri = str(request.base_url) + "auth/roblox/callback"
     auth_url = (
         "https://apis.roblox.com/oauth/v1/authorize?"
         f"client_id={ROBLOX_CLIENT_ID}&"
@@ -128,90 +168,46 @@ async def login_roblox(request: Request):
     )
     return RedirectResponse(url=auth_url)
 
-@app.get('/auth/callback')
-async def auth_callback(request: Request, provider: str = None):
-    if not provider:
-        return HTMLResponse(content="<h1>Error: Missing provider</h1>")
-
+@app.get('/auth/roblox/callback')
+async def roblox_callback(request: Request):
     code = request.query_params.get('code')
     if not code:
         return HTMLResponse(content="<h1>Error: Missing authorization code</h1>")
 
     try:
-        if provider == 'google':
-            if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-                return HTMLResponse(content="<h1>Google not configured.</h1>")
-            
-            # Exchange code for token
-            token_url = "https://oauth2.googleapis.com/token"
-            redirect_uri = str(request.base_url) + "auth/callback?provider=google"
-            payload = {
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": redirect_uri
-            }
-            resp = requests.post(token_url, data=payload)
-            if resp.status_code != 200:
-                return HTMLResponse(content="<h1>Failed to get Google token.</h1>")
-            
-            token_data = resp.json()
-            access_token = token_data.get("access_token")
-            
-            # Get user info
-            headers = {"Authorization": f"Bearer {access_token}"}
-            user_resp = requests.get("https://www.googleapis.com/oauth2/v1/userinfo", headers=headers)
-            if user_resp.status_code == 200:
-                user_info = user_resp.json()
-                request.session['user'] = {
-                    'id': user_info['id'],
-                    'name': user_info['name'],
-                    'email': user_info['email'],
-                    'provider': 'google'
-                }
-                logger.info(f"User logged in via Google: {user_info['email']}")
-                return RedirectResponse(url="/dashboard")
-
-        elif provider == 'roblox':
-            if not ROBLOX_CLIENT_ID or not ROBLOX_CLIENT_SECRET:
-                return HTMLResponse(content="<h1>Roblox not configured.</h1>")
-            
-            # Exchange code for token
-            token_url = "https://apis.roblox.com/oauth/v1/token"
-            redirect_uri = str(request.base_url) + "auth/callback?provider=roblox"
-            payload = {
-                "client_id": ROBLOX_CLIENT_ID,
-                "client_secret": ROBLOX_CLIENT_SECRET,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": redirect_uri
-            }
-            resp = requests.post(token_url, data=payload)
-            if resp.status_code != 200:
-                return HTMLResponse(content="<h1>Failed to get Roblox token.</h1>")
-            
-            token_data = resp.json()
-            access_token = token_data.get("access_token")
-            
-            # Get user info
-            headers = {"Authorization": f"Bearer {access_token}"}
-            user_resp = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers=headers)
-            if user_resp.status_code == 200:
-                user_info = user_resp.json()
-                request.session['user'] = {
-                    'id': user_info['sub'],
-                    'name': user_info['name'],
-                    'email': user_info.get('email', 'No Email Provided'),
-                    'provider': 'roblox'
-                }
-                logger.info(f"User logged in via Roblox: {user_info['name']}")
-                return RedirectResponse(url="/dashboard")
+        token_url = "https://apis.roblox.com/oauth/v1/token"
+        redirect_uri = str(request.base_url) + "auth/roblox/callback"
+        payload = {
+            "client_id": ROBLOX_CLIENT_ID,
+            "client_secret": ROBLOX_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri
+        }
+        resp = requests.post(token_url, data=payload)
+        if resp.status_code != 200:
+            return HTMLResponse(content="<h1>Failed to get Roblox token.</h1>")
         
-        return HTMLResponse(content="<h1>Authentication failed: Could not get user info.</h1>")
+        token_data = resp.json()
+        access_token = token_data.get("access_token")
+        
+        headers = {"Authorization": f"Bearer {access_token}"}
+        user_resp = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers=headers)
+        if user_resp.status_code == 200:
+            user_info = user_resp.json()
+            request.session['user'] = {
+                'id': user_info['sub'],
+                'name': user_info['name'],
+                'email': user_info.get('email', 'No Email Provided'),
+                'provider': 'roblox'
+            }
+            logger.info(f"User logged in via Roblox: {user_info['name']}")
+            return RedirectResponse(url="/dashboard")
+
+        return HTMLResponse(content="<h1>Failed to get Roblox user info.</h1>")
 
     except Exception as e:
-        logger.error(f"OAuth Callback Error: {str(e)}")
+        logger.error(f"Roblox Callback Error: {str(e)}")
         return HTMLResponse(content=f"<h1>Authentication Error: {str(e)}</h1>")
 
 @app.get('/auth/logout')
@@ -368,7 +364,7 @@ async def get_queue_size():
 # ==================== RUN ====================
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v3.0 - Manual OAuth")
+    logger.info("🚀 Roblox AI Coder v3.0 - Exact OAuth")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
