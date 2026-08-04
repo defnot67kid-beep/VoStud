@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Pairing Server (FIXED CORS & Debug Logs)
+Roblox AI Coder - Pairing Server (FIXED: Missing Endpoints)
 """
 
 import os
@@ -11,7 +11,7 @@ import secrets
 import random
 import requests
 import uvicorn
-from collections import deque, defaultdict
+from collections import deque
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,10 +39,9 @@ if not SESSION_SECRET:
 # ==================== FASTAPI SETUP ====================
 app = FastAPI(title="Roblox AI Coder", version="4.0.0")
 
-# ALLOW SPECIFIC ORIGINS TO PREVENT CORS BLOCKING
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Keep wildcard for web, but we handle Roblox specifics below
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -89,7 +88,6 @@ async def validate_code(request: Request):
     data = await request.json()
     code = data.get("code")
     
-    # DEBUG LOGGING SO WE KNOW IF ROBLOX IS HITTING US
     logger.info(f"Received validation request for code: {code}")
     
     if not code:
@@ -107,8 +105,6 @@ async def validate_code(request: Request):
         raise HTTPException(status_code=410, detail="Code has expired")
     
     logger.info(f"Code {code} validated successfully for {code_data['email']}")
-    
-    # Return user info to the plugin
     return {
         "valid": True,
         "email": code_data["email"],
@@ -158,6 +154,20 @@ async def get_session(request: Request):
     user = request.session.get('user')
     if user: return {"logged_in": True, **user}
     return {"logged_in": False}
+
+# ==================== MISSING ENDPOINTS ADDED ====================
+
+@app.get("/models")
+async def get_models():
+    return {"models": MODELS}
+
+@app.get("/status")
+async def get_status(request: Request):
+    user = request.session.get('user')
+    if not user:
+        return {"paired": False}
+    # Check if this user has an active code mapped or is actively paired
+    return {"paired": user['id'] in user_code_map or any(v['user_id'] == user['id'] for v in pending_codes.values())}
 
 # ==================== OAUTH ROUTES ====================
 @app.get('/auth/google')
