@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Full Server (One-Code Pairing System with Roblox Username)
+Roblox AI Coder - Full Server (Model Locking & Auto-Healing)
 """
 
 import os
@@ -37,7 +37,7 @@ if not SESSION_SECRET:
     SESSION_SECRET = secrets.token_urlsafe(32)
 
 # ==================== FASTAPI SETUP ====================
-app = FastAPI(title="Roblox AI Coder", version="4.1.0")
+app = FastAPI(title="Roblox AI Coder", version="4.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,14 +60,52 @@ plugin_state = {
     "Workspace": [],
     "ServerStorage": []
 }
-
-# Code Pairing System
 pending_codes = {}
 user_code_map = {}
 CODE_EXPIRY_SECONDS = 600
 
 def generate_pairing_code():
     return str(random.randint(100000, 999999))
+
+# ==================== MODEL QUOTA & LOCKING SYSTEM ====================
+# Stores locks: model_id -> {"locked": bool, "unlock_time": timestamp}
+model_locks = {}
+
+def lock_model(model_id):
+    model_locks[model_id] = {"locked": True, "unlock_time": time.time() + 600} # Lock for 10 mins
+    logger.warning(f"🔒 Locked model {model_id} due to failure. Retrying in 10 minutes.")
+
+def unlock_model(model_id):
+    if model_id in model_locks:
+        del model_locks[model_id]
+        logger.info(f"🔓 Unlocked model {model_id}")
+
+def is_model_locked(model_id):
+    if model_id not in model_locks:
+        return False
+    if time.time() > model_locks[model_id]["unlock_time"]:
+        unlock_model(model_id)
+        return False
+    return True
+
+# ==================== MODELS (WITH DETAILS) ====================
+MODELS = {
+    "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
+    "groq-mixtral": {"name": "Mixtral 8x7B", "provider": "Groq / Mistral", "api": "groq", "id": "mixtral-8x7b-32768", "image": "/images/models/mistral.png", "context": "32K tokens", "speed": 8, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Excellent legacy model."},
+    "deepseek-v3": {"name": "DeepSeek V3", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-chat", "image": "/images/models/deepseek.png", "context": "64K tokens", "speed": 9, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Open-source powerhouse."},
+    "deepseek-r1": {"name": "DeepSeek R1", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-r1", "image": "/images/models/deepseek.png", "context": "128K tokens", "speed": 7, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Reasoning powerhouse for complex logic."},
+    "gemini-2.0-flash": {"name": "Gemini 2.0 Flash", "provider": "Google", "api": "openrouter", "id": "google/gemini-2.0-flash-exp", "image": "/images/models/google.png", "context": "1M tokens", "speed": 10, "intelligence": 7, "cost": 1, "images": True, "cost_per_request": "Free", "description": "Sub-second latency."},
+    "gemini-2.5-pro": {"name": "Gemini 2.5 Pro", "provider": "Google", "api": "openrouter", "id": "google/gemini-2.5-pro-exp-03-25", "image": "/images/models/google.png", "context": "2M tokens", "speed": 7, "intelligence": 10, "cost": 1, "images": True, "cost_per_request": "Free", "description": "Massive context window for large scripts."},
+    "qwen-2.5-coder": {"name": "Qwen 2.5 Coder 7B", "provider": "Alibaba", "api": "openrouter", "id": "qwen/qwen-2.5-coder-7b-instruct", "image": "/images/models/alibaba.png", "context": "32K tokens", "speed": 8, "intelligence": 6, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Tiny and lightning fast."},
+    "qwen-2.5-coder-32b": {"name": "Qwen 2.5 Coder 32B", "provider": "Alibaba", "api": "openrouter", "id": "qwen/qwen-2.5-coder-32b-instruct", "image": "/images/models/alibaba.png", "context": "32K tokens", "speed": 6, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Powerful local-like coder."},
+    "mistral-7b-instruct": {"name": "Mistral 7B", "provider": "Mistral", "api": "openrouter", "id": "mistralai/mistral-7b-instruct", "image": "/images/models/mistral.png", "context": "8K tokens", "speed": 7, "intelligence": 5, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Lightweight and fast."},
+    "mistral-small-3.1": {"name": "Mistral Small 3.1", "provider": "Mistral", "api": "openrouter", "id": "mistralai/mistral-small-3.1-24b-instruct-2505", "image": "/images/models/mistral.png", "context": "32K tokens", "speed": 7, "intelligence": 8, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Excellent small model for utilities."},
+    "gpt-4o": {"name": "GPT-4o", "provider": "OpenAI", "api": "openrouter", "id": "openai/gpt-4o", "image": "/images/models/openai.png", "context": "128K tokens", "speed": 8, "intelligence": 10, "cost": 8, "images": True, "cost_per_request": "$0.03", "description": "The gold standard for coding."},
+    "claude-3.5-sonnet": {"name": "Claude 3.5 Sonnet", "provider": "Anthropic", "api": "openrouter", "id": "anthropic/claude-3.5-sonnet", "image": "/images/models/anthropic.png", "context": "200K tokens", "speed": 7, "intelligence": 10, "cost": 6, "images": True, "cost_per_request": "$0.03", "description": "Incredible formatting."},
+    "claude-3.7-sonnet": {"name": "Claude 3.7 Sonnet", "provider": "Anthropic", "api": "openrouter", "id": "anthropic/claude-3.7-sonnet", "image": "/images/models/anthropic.png", "context": "200K tokens", "speed": 8, "intelligence": 10, "cost": 6, "images": True, "cost_per_request": "$0.03", "description": "Latest Anthropic model with reasoning."},
+    "nous-hermes": {"name": "Nous Hermes 2 Pro", "provider": "Nous Research", "api": "openrouter", "id": "nousresearch/hermes-2-pro-mistral-7b", "image": "/images/models/default.png", "context": "32K tokens", "speed": 7, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Great for general bot logic."},
+    "llama-3.1-8b": {"name": "Llama 3.1 8B", "provider": "Meta", "api": "openrouter", "id": "meta-llama/llama-3.1-8b-instruct", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-lightweight and fast."},
+}
 
 # ==================== PLUGIN DATA ENDPOINTS ====================
 @app.post("/api/plugin-data")
@@ -90,32 +128,16 @@ async def get_plugin_data():
 @app.post("/api/generate-code")
 async def generate_code(request: Request):
     user = request.session.get('user')
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
+    if not user: raise HTTPException(status_code=401, detail="Not authenticated")
     user_id = user['id']
-    
-    # BLOCK: Check if they already have a valid, unexpired code
     if user_id in user_code_map:
         old_code = user_code_map[user_id]
         code_data = pending_codes.get(old_code)
         if code_data and time.time() < code_data["expires_at"]:
-            # Re-send the existing code
             return {"code": old_code, "expires_in": int(code_data["expires_at"] - time.time()), "new": False}
-    
-    # Generate new code
     code = generate_pairing_code()
-    pending_codes[code] = {
-        "user_id": user_id,
-        "email": user['email'],
-        "name": user['name'],
-        "created_at": time.time(),
-        "expires_at": time.time() + CODE_EXPIRY_SECONDS,
-        "pairing_id": None,
-        "roblox_username": None
-    }
+    pending_codes[code] = {"user_id": user_id, "email": user['email'], "name": user['name'], "created_at": time.time(), "expires_at": time.time() + CODE_EXPIRY_SECONDS, "pairing_id": None, "roblox_username": None}
     user_code_map[user_id] = code
-    
     logger.info(f"Generated new pairing code {code} for {user['email']}")
     return {"code": code, "expires_in": CODE_EXPIRY_SECONDS, "new": True}
 
@@ -125,91 +147,57 @@ async def validate_code(request: Request):
         data = await request.json()
         code = data.get("code")
         roblox_username = data.get("roblox_username", "UnknownRobloxUser")
-        
-        logger.info(f"Received validation request for code: {code} from {roblox_username}")
-        
-        if not code:
-            return {"valid": False, "error": "Code required"}
-        
+        if not code: return {"valid": False, "error": "Code required"}
         code_data = pending_codes.get(code)
-        if not code_data:
+        if not code_data or time.time() > code_data["expires_at"]:
+            if code_data: pending_codes.pop(code, None); user_code_map.pop(code_data["user_id"], None)
             return {"valid": False, "error": "Invalid or expired code"}
-        
-        if time.time() > code_data["expires_at"]:
-            pending_codes.pop(code, None)
-            user_code_map.pop(code_data["user_id"], None)
-            return {"valid": False, "error": "Code has expired"}
-        
         pairing_id = str(uuid.uuid4())
         code_data["pairing_id"] = pairing_id
         code_data["roblox_username"] = roblox_username
-
-        logger.info(f"Code {code} validated by {roblox_username}")
-        
         return {"valid": True, "pairing_id": pairing_id}
     except Exception as e:
-        logger.error(f"Validation error: {str(e)}")
         return {"valid": False, "error": str(e)}
 
 @app.post("/api/check-pair")
 async def check_pair(request: Request):
     data = await request.json()
     pairing_id = data.get("pairing_id")
-    
-    if not pairing_id:
-        return {"paired": False}
-    
     for code, code_data in list(pending_codes.items()):
         if code_data.get("pairing_id") == pairing_id:
-            return {
-                "paired": True, 
-                "roblox_username": code_data.get("roblox_username", "RobloxUser")
-            }
-    
+            return {"paired": True, "roblox_username": code_data.get("roblox_username", "RobloxUser")}
     return {"paired": False}
 
 @app.post("/api/consume-code")
 async def consume_code(request: Request):
     data = await request.json()
     code = data.get("code")
-    if not code:
-        return {"success": False, "reason": "Code required"}
+    if not code: return {"success": False, "reason": "Code required"}
     code_data = pending_codes.get(code)
-    if not code_data:
-        return {"success": False, "reason": "Already used or expired"}
-    pending_codes.pop(code, None)
-    user_code_map.pop(code_data["user_id"], None)
+    if not code_data: return {"success": False, "reason": "Already used or expired"}
+    pending_codes.pop(code, None); user_code_map.pop(code_data["user_id"], None)
     return {"success": True, "message": "Code consumed successfully"}
 
 @app.post("/api/dashboard-pair-success")
 async def dashboard_pair_success(request: Request):
     data = await request.json()
     pairing_id = data.get("pairing_id")
-    if pairing_id:
-        logger.info(f"Received pairing success signal for ID: {pairing_id}")
-        return {"success": True}
-    return {"success": False}
+    if pairing_id: logger.info(f"Received pairing success signal for ID: {pairing_id}")
+    return {"success": True}
 
 # ==================== PAGE ROUTES ====================
 @app.get("/", response_class=RedirectResponse)
 async def root(): return RedirectResponse(url="/home")
-
 @app.get("/home", response_class=HTMLResponse)
 async def serve_home():
-    with open(os.path.join("web", "home.html"), "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
+    with open(os.path.join("web", "home.html"), "r", encoding="utf-8") as f: return HTMLResponse(content=f.read())
 @app.get("/signup", response_class=HTMLResponse)
 async def serve_signup(request: Request):
     if request.session.get('user'): return RedirectResponse(url="/dashboard")
-    with open(os.path.join("web", "signup.html"), "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
+    with open(os.path.join("web", "signup.html"), "r", encoding="utf-8") as f: return HTMLResponse(content=f.read())
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard(request: Request):
-    with open(os.path.join("web", "dashboard.html"), "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
+    with open(os.path.join("web", "dashboard.html"), "r", encoding="utf-8") as f: return HTMLResponse(content=f.read())
 @app.get("/session")
 async def get_session(request: Request):
     user = request.session.get('user')
@@ -218,98 +206,19 @@ async def get_session(request: Request):
 
 @app.get("/models")
 async def get_models():
-    return {"models": MODELS}
+    # Append lock status to models before sending
+    models_with_lock = {}
+    for key, val in MODELS.items():
+        models_with_lock[key] = {**val, "locked": is_model_locked(key)}
+    return {"models": models_with_lock}
 
 @app.get("/status")
 async def get_status(request: Request):
     user = request.session.get('user')
-    if not user:
-        return {"paired": False}
+    if not user: return {"paired": False}
     return {"paired": user['id'] in user_code_map}
 
-# ==================== OAUTH & AI ====================
-MODELS = {
-    "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
-    "groq-mixtral": {"name": "Mixtral 8x7B", "provider": "Groq / Mistral", "api": "groq", "id": "mixtral-8x7b-32768", "image": "/images/models/mistral.png", "context": "32K tokens", "speed": 8, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Excellent legacy model."},
-    "deepseek-v3": {"name": "DeepSeek V3", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-chat", "image": "/images/models/deepseek.png", "context": "64K tokens", "speed": 9, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Open-source powerhouse."},
-    "gemini-2.0-flash": {"name": "Gemini 2.0 Flash", "provider": "Google", "api": "openrouter", "id": "google/gemini-2.0-flash-exp", "image": "/images/models/google.png", "context": "1M tokens", "speed": 10, "intelligence": 7, "cost": 1, "images": True, "cost_per_request": "Free", "description": "Sub-second latency."},
-    "qwen-2.5-coder": {"name": "Qwen 2.5 Coder 7B", "provider": "Alibaba", "api": "openrouter", "id": "qwen/qwen-2.5-coder-7b-instruct", "image": "/images/models/alibaba.png", "context": "32K tokens", "speed": 8, "intelligence": 6, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Tiny and lightning fast."},
-    "mistral-7b-instruct": {"name": "Mistral 7B", "provider": "Mistral", "api": "openrouter", "id": "mistralai/mistral-7b-instruct", "image": "/images/models/mistral.png", "context": "8K tokens", "speed": 7, "intelligence": 5, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Lightweight and fast."},
-    "gpt-4o": {"name": "GPT-4o", "provider": "OpenAI", "api": "openrouter", "id": "openai/gpt-4o", "image": "/images/models/openai.png", "context": "128K tokens", "speed": 8, "intelligence": 10, "cost": 8, "images": True, "cost_per_request": "$0.03 - $0.10", "description": "The gold standard for coding."},
-    "claude-3.5-sonnet": {"name": "Claude 3.5 Sonnet", "provider": "Anthropic", "api": "openrouter", "id": "anthropic/claude-3.5-sonnet", "image": "/images/models/anthropic.png", "context": "200K tokens", "speed": 7, "intelligence": 10, "cost": 6, "images": True, "cost_per_request": "$0.03 - $0.08", "description": "Incredible formatting."},
-}
-
-code_queue = deque()
-MAX_QUEUE_SIZE = 100
-
-class GenerateRequest(BaseModel):
-    prompt: str
-    model_id: str = "groq-llama"
-    destination: str = "ServerScriptService"
-
-class GenerateResponse(BaseModel):
-    code: str
-    queued: bool
-    id: str
-    model_used: str
-
-def clean_code(code: str) -> str:
-    if not code: return ""
-    code = re.sub(r'```(lua|luau)?\s*', '', code)
-    return code.strip()
-
-def generate_with_groq(model_id, prompt):
-    if not GROQ_API_KEY: raise Exception("GROQ_API_KEY missing.")
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-    payload = {"model": model_id, "messages": [{"role": "system", "content": "You are a Roblox Lua expert. Output ONLY Lua code."}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 3000}
-    response = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=30)
-    if response.status_code != 200: raise Exception(f"Groq Error: {response.text}")
-    return clean_code(response.json()["choices"][0]["message"]["content"])
-
-def generate_with_openrouter(model_id, prompt):
-    if not OPENROUTER_API_KEY: raise Exception("OPENROUTER_API_KEY missing.")
-    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
-    payload = {"model": model_id, "messages": [{"role": "system", "content": "You are a Roblox Lua expert. Output ONLY Lua code."}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 3000}
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=60)
-    if response.status_code != 200: raise Exception(f"OpenRouter Error: {response.text}")
-    return clean_code(response.json()["choices"][0]["message"]["content"])
-
-@app.post("/generate", response_model=GenerateResponse)
-async def generate_code(request: GenerateRequest):
-    if not request.prompt: raise HTTPException(status_code=400, detail="No prompt provided")
-    model_config = MODELS.get(request.model_id)
-    if not model_config: raise HTTPException(status_code=400, detail="Invalid model ID")
-    try:
-        if model_config["api"] == "groq":
-            code = generate_with_groq(model_config["id"], request.prompt)
-        else:
-            code = generate_with_openrouter(model_config["id"], request.prompt)
-        
-        code_id = str(uuid.uuid4())
-        code_queue.append({"id": code_id, "code": code, "scriptName": request.prompt[:30].replace(" ", "_"), "destination": request.destination, "timestamp": time.time()})
-        if len(code_queue) > MAX_QUEUE_SIZE: code_queue.popleft()
-        return GenerateResponse(code=code, queued=True, id=code_id, model_used=model_config["name"])
-    except Exception as e:
-        logger.error(f"Generation failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/queue/next")
-async def get_next_code():
-    if code_queue:
-        item = code_queue[0]
-        return {"id": item["id"], "code": item["code"], "scriptName": item["scriptName"], "destination": item["destination"]}
-    return {"code": None}
-
-@app.post("/queue/ack")
-async def acknowledge_code(request: dict):
-    code_id = request.get("id")
-    for i, item in enumerate(code_queue):
-        if item["id"] == code_id:
-            code_queue.remove(item)
-            return {"success": True}
-    return {"success": False}
-
-# ==================== OAUTH ROUTES ====================
+# ==================== OAUTH ====================
 @app.get('/auth/google')
 async def login_google(request: Request):
     redirect_uri = str(request.base_url) + "auth/google/callback"
@@ -355,9 +264,113 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
+# ==================== AI GENERATION WITH FAILOVER ====================
+code_queue = deque()
+MAX_QUEUE_SIZE = 100
+
+class GenerateRequest(BaseModel):
+    prompt: str
+    model_id: str = "groq-llama"
+    destination: str = "ServerScriptService"
+
+class GenerateResponse(BaseModel):
+    code: str
+    queued: bool
+    id: str
+    model_used: str
+
+def clean_code(code: str) -> str:
+    if not code: return ""
+    code = re.sub(r'```(lua|luau)?\s*', '', code)
+    return code.strip()
+
+def generate_with_groq(model_id, prompt):
+    if not GROQ_API_KEY: raise Exception("GROQ_API_KEY missing.")
+    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+    payload = {"model": model_id, "messages": [{"role": "system", "content": "You are a Roblox Lua expert. Output ONLY Lua code."}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 3000}
+    response = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=30)
+    if response.status_code != 200: raise Exception(f"Groq Error: {response.text}")
+    return clean_code(response.json()["choices"][0]["message"]["content"])
+
+def generate_with_openrouter(model_id, prompt):
+    if not OPENROUTER_API_KEY: raise Exception("OPENROUTER_API_KEY missing.")
+    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
+    payload = {"model": model_id, "messages": [{"role": "system", "content": "You are a Roblox Lua expert. Output ONLY Lua code."}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 3000}
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=60)
+    if response.status_code != 200:
+        if response.status_code == 404 or response.status_code == 429:
+            raise Exception(f"OpenRouter Error: Model Unavailable (Code {response.status_code})")
+        raise Exception(f"OpenRouter Error: {response.text}")
+    return clean_code(response.json()["choices"][0]["message"]["content"])
+
+@app.post("/generate", response_model=GenerateResponse)
+async def generate_code(request: GenerateRequest):
+    if not request.prompt: raise HTTPException(status_code=400, detail="No prompt provided")
+    
+    original_model_id = request.model_id
+    model_id = original_model_id
+    
+    # AUTO MODE: Reroute to a safe known-good model
+    if model_id == "auto" or model_id not in MODELS or is_model_locked(model_id):
+        model_id = "groq-llama"
+    
+    model_config = MODELS.get(model_id)
+    if not model_config:
+        # Final Fallback
+        model_id = "groq-llama"
+        model_config = MODELS.get(model_id)
+        if not model_config: raise HTTPException(status_code=500, detail="Critical error: No available models.")
+
+    try:
+        if model_config["api"] == "groq":
+            code = generate_with_groq(model_config["id"], request.prompt)
+        else:
+            code = generate_with_openrouter(model_config["id"], request.prompt)
+        
+        # If success, unlock the model if it was locked
+        unlock_model(model_id)
+        
+        code_id = str(uuid.uuid4())
+        code_queue.append({"id": code_id, "code": code, "scriptName": request.prompt[:30].replace(" ", "_"), "destination": request.destination, "timestamp": time.time()})
+        if len(code_queue) > MAX_QUEUE_SIZE: code_queue.popleft()
+        return GenerateResponse(code=code, queued=True, id=code_id, model_used=model_config["name"])
+        
+    except Exception as e:
+        logger.error(f"Generation failed for {model_id}: {str(e)}")
+        # Lock the broken model
+        lock_model(model_id)
+        
+        # Try the ultimate fallback (Groq Llama)
+        try:
+            logger.info(f"Attempting emergency fallback to Groq Llama...")
+            fallback_code = generate_with_groq("llama-3.3-70b-versatile", request.prompt)
+            fallback_id = str(uuid.uuid4())
+            code_queue.append({"id": fallback_id, "code": fallback_code, "scriptName": request.prompt[:30].replace(" ", "_") + "_Fallback", "destination": request.destination, "timestamp": time.time()})
+            if len(code_queue) > MAX_QUEUE_SIZE: code_queue.popleft()
+            return GenerateResponse(code=fallback_code, queued=True, id=fallback_id, model_used="Llama 3.3 70B (Fallback)")
+        except Exception as fallback_e:
+            logger.error(f"Emergency fallback also failed: {str(fallback_e)}")
+            raise HTTPException(status_code=500, detail="All AI models are currently unavailable. Check API keys or quotas.")
+
+@app.get("/queue/next")
+async def get_next_code():
+    if code_queue:
+        item = code_queue[0]
+        return {"id": item["id"], "code": item["code"], "scriptName": item["scriptName"], "destination": item["destination"]}
+    return {"code": None}
+
+@app.post("/queue/ack")
+async def acknowledge_code(request: dict):
+    code_id = request.get("id")
+    for i, item in enumerate(code_queue):
+        if item["id"] == code_id:
+            code_queue.remove(item)
+            return {"success": True}
+    return {"success": False}
+
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v4.1.0 - Full Server")
+    logger.info("🚀 Roblox AI Coder v4.2.0 - Model Locking & Auto-Healing")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
