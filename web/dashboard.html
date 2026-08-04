@@ -641,9 +641,9 @@
                             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-10-10 10 10 0 0 1 10-10z"/><path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
                             Account
                         </div>
-                        <div class="settings-dropup-item">
+                        <div class="settings-dropup-item" id="pairPluginBtn">
                             <svg viewBox="0 0 24 24"><path d="M12 2l-4 4v8l4 4 4-4V6l-4-4z"/><path d="M12 18v4"/></svg>
-                            Plugin
+                            Pair Plugin
                         </div>
                         <div class="settings-dropup-item">
                             <svg viewBox="0 0 24 24"><path d="M20.6 7.3l-1.8-1.8-4.8 4.8 1.8 1.8 4.8-4.8z"/><path d="M15.5 5.5L14 4 8 9.5 6 15l-2 2"/><path d="M4 14H2v6h6v-2"/><circle cx="16" cy="16" r="2"/></svg>
@@ -702,6 +702,17 @@
         </div>
     </div>
 
+    <!-- ==================== PAIRING MODAL ==================== -->
+    <div id="pairModal" style="display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); justify-content:center; align-items:center; z-index:1000;">
+        <div style="background:#18181b; border:1px solid #27272a; border-radius:20px; padding:40px; max-width:450px; text-align:center;">
+            <h2 style="color:#fff; margin-bottom:10px;">Plugin Pairing</h2>
+            <p style="color:#a1a1aa; font-size:14px; margin-bottom:20px;">Enter this code in the Roblox Studio plugin to link your account.</p>
+            <div id="pairCodeDisplay" style="background:#09090b; border:1px solid #27272a; border-radius:12px; padding:20px; font-size:32px; font-weight:700; color:#fff; letter-spacing:4px; margin-bottom:10px;">------</div>
+            <div id="pairTimer" style="color:#6b7280; font-size:12px;">Expires in 10:00</div>
+            <button onclick="closePairModal()" style="background:#27272a; border:none; color:#fff; padding:10px 20px; border-radius:8px; margin-top:20px; cursor:pointer;">Close</button>
+        </div>
+    </div>
+
     <div id="modalOverlay">
         <div class="modal-box">
             <button class="close-modal" onclick="closeModal()">✕</button>
@@ -740,6 +751,51 @@
     </div>
 
     <script>
+        // ==================== PAIRING LOGIC ====================
+        const pairModal = document.getElementById('pairModal');
+        const pairCodeDisplay = document.getElementById('pairCodeDisplay');
+        const pairTimer = document.getElementById('pairTimer');
+        let pairInterval;
+
+        document.getElementById('pairPluginBtn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            document.getElementById('settingsDropup').classList.remove('open');
+            pairModal.style.display = 'flex';
+            pairCodeDisplay.textContent = 'Generating...';
+            pairTimer.textContent = '...';
+
+            try {
+                const res = await fetch('/api/generate-code', { method: 'POST' });
+                const data = await res.json();
+                pairCodeDisplay.textContent = data.code;
+                startTimer(data.expires_in);
+            } catch {
+                pairCodeDisplay.textContent = 'Error';
+                pairTimer.textContent = 'Failed to generate code';
+            }
+        });
+
+        function startTimer(seconds) {
+            let remaining = seconds;
+            clearInterval(pairInterval);
+            pairInterval = setInterval(() => {
+                remaining--;
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                pairTimer.textContent = `Expires in ${m}:${s.toString().padStart(2, '0')}`;
+                if (remaining <= 0) {
+                    clearInterval(pairInterval);
+                    pairCodeDisplay.textContent = 'Expired';
+                    pairTimer.textContent = 'Code expired. Click Pair Plugin again.';
+                }
+            }, 1000);
+        }
+
+        function closePairModal() {
+            clearInterval(pairInterval);
+            pairModal.style.display = 'none';
+        }
+
         // ==================== SETTINGS DROPUP LOGIC ====================
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsDropup = document.getElementById('settingsDropup');
@@ -759,7 +815,7 @@
             window.location.href = '/auth/logout';
         });
 
-        // ==================== LOAD REAL USER PROFILE (FIXED PFP) ====================
+        // ==================== LOAD REAL USER PROFILE ====================
         async function loadUserProfile() {
             try {
                 const res = await fetch('/session');
@@ -773,11 +829,7 @@
                     const email = data.email || 'user@example.com';
                     const name = data.name || email.split('@')[0];
 
-                    /* 
-                       FIXED LOGIC HERE:
-                       1. PRIORITY: Use the real Google picture from the server session.
-                       2. FALLBACK: If null, use a beautiful generated UI Avatar.
-                    */
+                    // Use the actual Google picture, or fallback to Avatar
                     const avatarUrl = data.picture || 
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6b7280&color=fff&bold=true`;
 
