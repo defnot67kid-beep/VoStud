@@ -1,6 +1,6 @@
 """
-Roblox AI Coder - Fixed OAuth (Exact Redirect URIs)
-Handles Google & Roblox Login separately
+Roblox AI Coder - Final Production Server
+Handles Real Google & Roblox Login, Sessions, and AI Generation
 """
 
 import os
@@ -8,9 +8,9 @@ import re
 import uuid
 import time
 import logging
+import secrets
 import requests
 import uvicorn
-import secrets
 from collections import deque
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -35,10 +35,11 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 ROBLOX_CLIENT_ID = os.getenv("ROBLOX_CLIENT_ID")
 ROBLOX_CLIENT_SECRET = os.getenv("ROBLOX_CLIENT_SECRET")
 
+# Session Security
 SESSION_SECRET = os.getenv("SESSION_SECRET")
 if not SESSION_SECRET:
     SESSION_SECRET = secrets.token_urlsafe(32)
-    logger.warning("⚠️ SESSION_SECRET not found. Generated a random one.")
+    logger.warning("⚠️ SESSION_SECRET not found. Generated a random one. Logins will reset on restart.")
 
 # ==================== FASTAPI SETUP ====================
 app = FastAPI(title="Roblox AI Coder", version="3.0.0")
@@ -51,6 +52,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Critical: Allows cookies to store user sessions
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 
 # ==================== SERVE STATIC FILES ====================
@@ -72,6 +74,7 @@ async def serve_home():
 
 @app.get("/signup", response_class=HTMLResponse)
 async def serve_signup(request: Request):
+    # If user is already logged in, send them straight to dashboard
     user = request.session.get('user')
     if user:
         return RedirectResponse(url="/dashboard")
@@ -92,13 +95,26 @@ async def serve_dashboard(request: Request):
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Dashboard page not found.</h1>")
 
+# ==================== SESSION CHECK ====================
+@app.get("/session")
+async def get_session(request: Request):
+    user = request.session.get('user')
+    if user:
+        return {
+            "logged_in": True,
+            "name": user.get('name', 'User'),
+            "email": user.get('email', 'No Email'),
+            "provider": user.get('provider', 'unknown')
+        }
+    return {"logged_in": False}
+
 # ==================== GOOGLE OAUTH ====================
 @app.get('/auth/google')
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
         return HTMLResponse(content="<h1>Google Login not configured.</h1>")
     
-    # EXACT URL MATCH
+    # Exact URL match required by Google
     redirect_uri = str(request.base_url) + "auth/google/callback"
     auth_url = (
         "https://accounts.google.com/o/oauth2/v2/auth?"
@@ -157,7 +173,7 @@ async def login_roblox(request: Request):
     if not ROBLOX_CLIENT_ID:
         return HTMLResponse(content="<h1>Roblox Login not configured.</h1>")
     
-    # EXACT URL MATCH
+    # Exact URL match required by Roblox
     redirect_uri = str(request.base_url) + "auth/roblox/callback"
     auth_url = (
         "https://apis.roblox.com/oauth/v1/authorize?"
@@ -215,7 +231,7 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== YOUR API ENDPOINTS ====================
+# ==================== AI MODELS ====================
 MODELS = {
     "groq-llama": {
         "name": "Llama 3.3 70B",
@@ -233,9 +249,11 @@ MODELS = {
     }
 }
 
+# ==================== QUEUE ====================
 code_queue = deque()
 MAX_QUEUE_SIZE = 100
 
+# ==================== PYDANTIC MODELS ====================
 class GenerateRequest(BaseModel):
     prompt: str
     model_id: str = "groq-llama"
@@ -252,6 +270,7 @@ class StatusResponse(BaseModel):
     queue_size: int
     models_loaded: int
 
+# ==================== HELPERS ====================
 def clean_code(code: str) -> str:
     if not code: return ""
     code = re.sub(r'```lua\s*', '', code)
@@ -299,6 +318,7 @@ def generate_with_openrouter(model_id: str, prompt: str) -> str:
     if response.status_code != 200: raise Exception(f"OpenRouter Error: {response.text}")
     return clean_code(response.json()["choices"][0]["message"]["content"])
 
+# ==================== API ENDPOINTS ====================
 @app.get("/status", response_model=StatusResponse)
 async def get_status():
     return StatusResponse(status="online", queue_size=len(code_queue), models_loaded=len(MODELS))
@@ -364,7 +384,8 @@ async def get_queue_size():
 # ==================== RUN ====================
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v3.0 - Exact OAuth")
+    logger.info("🚀 Roblox AI Coder v3.0 - Final Production")
+    logger.info(f"📊 Loaded {len(MODELS)} models")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
