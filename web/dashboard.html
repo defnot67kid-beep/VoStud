@@ -370,7 +370,6 @@
         .filter-btn { background: transparent; border: 1px solid #27272a; color: #a1a1aa; padding: 6px 16px; border-radius: 100px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
         .filter-btn:hover { background: #27272a; color: #fff; }
 
-        /* NEW: Auto Section Styling */
         .auto-section {
             display: flex;
             align-items: center;
@@ -378,9 +377,9 @@
             margin-bottom: 12px;
             background: transparent;
             border-radius: 10px;
-            opacity: 0.6; /* Grey out */
+            opacity: 0.6;
             cursor: not-allowed;
-            pointer-events: none; /* Prevent clicking */
+            pointer-events: none;
         }
         .auto-section .list-icon {
             width: 28px; height: 28px;
@@ -422,7 +421,6 @@
         .list-name { font-size: 14px; font-weight: 500; }
         .list-desc { font-size: 12px; color: #6b7280; }
 
-        /* "SHOW MORE MODELS" Button */
         .show-more-btn {
             display: flex; align-items: center; justify-content: space-between;
             padding: 10px 14px; margin-top: 8px; border-radius: 8px;
@@ -434,7 +432,6 @@
             background: #27272a; padding: 2px 10px; border-radius: 100px; font-size: 12px; color: #9ca3af;
         }
 
-        /* Modal Right Panel Details */
         .detail-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
         .detail-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; }
         .detail-title { font-size: 20px; font-weight: 600; }
@@ -445,7 +442,7 @@
         .bar-segment.filled-green { background: #22c55e; }
         .bar-segment.filled-yellow { background: #eab308; }
         .bar-segment.filled-red { background: #ef4444; }
-        .bar-segment.filled-adapt { background: #52525b; } /* For Auto bars if needed */
+        .bar-segment.filled-adapt { background: #52525b; }
         
         .detail-divider { border: none; border-top: 1px solid #27272a; margin: 16px 0; }
         
@@ -466,7 +463,6 @@
             margin-right: 10px; vertical-align: middle;
         }
 
-        /* Modal Footer */
         .modal-footer {
             position: absolute; bottom: 0; left: 0; width: 100%;
             padding: 16px 24px; border-top: 1px solid #1f1f1f;
@@ -625,7 +621,7 @@
                 </div>
 
                 <div class="toolbar-right">
-                    <button class="microphone-btn">🎤</button>
+                    <button class="microphone-btn" id="micBtn">🎤</button>
                 </div>
             </div>
         </div>
@@ -767,13 +763,10 @@
                 const data = await res.json();
                 availableModels = data.models || {};
                 
-                // Skip the "auto" model for the default selection and filter it out of ALL MODELS
                 const modelKeys = Object.keys(availableModels).filter(key => key !== 'auto');
                 
-                // Update model count
                 modelCountEl.textContent = `${modelKeys.length} models`;
 
-                // Select the first real model by default
                 if (modelKeys.length > 0) {
                     selectedModelId = modelKeys[0];
                     const first = availableModels[selectedModelId];
@@ -799,7 +792,6 @@
         function renderModelList(filter) {
             modelListContainer.innerHTML = "";
             
-            // Filter out the 'auto' key so we don't double-add it
             const modelEntries = Object.entries(availableModels).filter(([key]) => key !== 'auto');
             
             modelEntries.forEach(([key, model]) => {
@@ -1186,6 +1178,82 @@
                 await triggerGeneration();
             }
         });
+
+        // ==================== VOICE TO TEXT (MICROPHONE) ====================
+        const micBtn = document.getElementById("micBtn");
+
+        const SpeechRecognition =
+            window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = "en-US";
+
+            let listening = false;
+
+            micBtn.addEventListener("click", () => {
+                if (!listening) {
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(() => {
+                            recognition.start();
+                        })
+                        .catch(() => {
+                            alert("Microphone permission denied.");
+                        });
+                } else {
+                    recognition.stop();
+                }
+            });
+
+            recognition.onstart = () => {
+                listening = true;
+                micBtn.textContent = "🔴";
+                micBtn.title = "Stop Listening";
+                micBtn.style.color = "#ef4444";
+            };
+
+            recognition.onend = () => {
+                listening = false;
+                micBtn.textContent = "🎤";
+                micBtn.title = "Start Voice Input";
+                micBtn.style.color = "#a1a1aa";
+            };
+
+            recognition.onresult = (event) => {
+                let transcript = "";
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+
+                promptInput.value = transcript;
+                promptInput.dispatchEvent(new Event("input"));
+
+                // Auto-send after 1.2 seconds of silence
+                clearTimeout(window.voiceTimer);
+                window.voiceTimer = setTimeout(() => {
+                    if (transcript.trim().length > 0) {
+                        triggerGeneration();
+                    }
+                }, 1200);
+            };
+
+            recognition.onerror = (e) => {
+                console.log(e.error);
+                if (e.error === "not-allowed") {
+                    micBtn.textContent = "🎤";
+                    micBtn.title = "Mic Denied";
+                    listening = false;
+                }
+            };
+        } else {
+            micBtn.disabled = true;
+            micBtn.title = "Speech Recognition isn't supported in this browser.";
+            micBtn.style.opacity = "0.4";
+        }
 
         // ==================== INIT ====================
         loadModels();
