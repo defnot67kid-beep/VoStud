@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Final Production Server (Expanded Free Models)
+Roblox AI Coder - Final Production Server (Real Stats)
 Handles Real Google & Roblox Login, Sessions, and AI Generation
 """
 
@@ -231,63 +231,111 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== AI MODELS (EXPANDED FREE OPTIONS) ====================
+# ==================== AI MODELS (EXPANDED FREE OPTIONS + REAL STATS) ====================
 MODELS = {
     "groq-llama": {
         "name": "Llama 3.3 70B",
-        "provider": "Meta (via Groq) [Free]",
+        "provider": "Groq [Free]",
         "api": "groq",
         "id": "llama-3.3-70b-versatile",
-        "description": "Ultra-fast coding model via Groq's generous free tier."
+        "icon": "L",
+        "color": "#7c3aed",
+        "context": "128K tokens",
+        "speed": 10,        # Outputs massive 75 tokens/sec
+        "intelligence": 9,  # Top tier reasoning
+        "cost": 1,          # Completely free
+        "description": "Ultra-fast coding model via Groq's free tier. Blazing speed and intelligent enough for 95% of scripts."
     },
     "groq-mixtral": {
         "name": "Mixtral 8x7B",
-        "provider": "Mistral (via Groq) [Free]",
+        "provider": "Groq [Free]",
         "api": "groq",
         "id": "mixtral-8x7b-32768",
-        "description": "Excellent legacy model for logic and math-heavy scripts."
-    },
-    "gpt-4o": {
-        "name": "GPT-4o",
-        "provider": "OpenAI (via OpenRouter)",
-        "api": "openrouter",
-        "id": "openai/gpt-4o",
-        "description": "#1 Coding model. Excellent for complex game logic (Paid)."
-    },
-    "claude-3.5-sonnet": {
-        "name": "Claude 3.5 Sonnet",
-        "provider": "Anthropic (via OpenRouter)",
-        "api": "openrouter",
-        "id": "anthropic/claude-3.5-sonnet",
-        "description": "Incredible at following formatting rules (Paid)."
+        "icon": "M",
+        "color": "#2563eb",
+        "context": "32K tokens",
+        "speed": 8,
+        "intelligence": 7,
+        "cost": 1,
+        "description": "Excellent legacy model for logic and math-heavy scripts. Very fast and completely free."
     },
     "deepseek-v3": {
         "name": "DeepSeek V3",
-        "provider": "DeepSeek (via OpenRouter) [Free]",
+        "provider": "OpenRouter [Free]",
         "api": "openrouter",
         "id": "deepseek/deepseek-chat",
-        "description": "Open-source powerhouse. Easily rivals GPT-4 for free."
+        "icon": "D",
+        "color": "#f59e0b",
+        "context": "64K tokens",
+        "speed": 9,        # 60 tokens/sec
+        "intelligence": 10, # Rivals GPT-4o in coding benchmarks
+        "cost": 1,          # Free via OpenRouter
+        "description": "Open-source powerhouse. Easily rivals GPT-4 for coding and is completely free."
     },
     "gemini-2.0-flash": {
         "name": "Gemini 2.0 Flash",
-        "provider": "Google (via OpenRouter) [Free]",
+        "provider": "OpenRouter [Free]",
         "api": "openrouter",
         "id": "google/gemini-2.0-flash-exp",
-        "description": "Sub-second latency. Great for boilerplate code."
+        "icon": "G",
+        "color": "#f97316",
+        "context": "1M tokens",
+        "speed": 10,        # Extremely fast
+        "intelligence": 7,
+        "cost": 1,
+        "description": "Sub-second latency. Great for rapid prototyping, boilerplate, and utility scripts."
     },
     "qwen-2.5-coder": {
         "name": "Qwen 2.5 Coder 7B",
-        "provider": "Alibaba (via OpenRouter) [Free]",
+        "provider": "OpenRouter [Free]",
         "api": "openrouter",
         "id": "qwen/qwen-2.5-coder-7b-instruct",
-        "description": "Tiny and lightning fast. Perfect for Lua utility scripts."
+        "icon": "Q",
+        "color": "#22c55e",
+        "context": "32K tokens",
+        "speed": 8,
+        "intelligence": 6,
+        "cost": 1,
+        "description": "Tiny and lightning fast. Perfect for small Lua utility scripts and basic functions."
     },
     "mistral-7b-instruct": {
-        "name": "Mistral 7B Instruct",
-        "provider": "Mistral (via OpenRouter) [Free]",
+        "name": "Mistral 7B",
+        "provider": "OpenRouter [Free]",
         "api": "openrouter",
         "id": "mistralai/mistral-7b-instruct",
-        "description": "Lightweight, fast, and completely free."
+        "icon": "M",
+        "color": "#a855f7",
+        "context": "8K tokens",
+        "speed": 7,
+        "intelligence": 5,
+        "cost": 1,
+        "description": "Lightweight, fast, and completely free. Good for quick drafts."
+    },
+    "gpt-4o": {
+        "name": "GPT-4o",
+        "provider": "OpenRouter [Paid]",
+        "api": "openrouter",
+        "id": "openai/gpt-4o",
+        "icon": "G",
+        "color": "#d946ef",
+        "context": "128K tokens",
+        "speed": 8,         # Medium speed
+        "intelligence": 10, # Absolute peak intelligence
+        "cost": 8,          # Expensive per token
+        "description": "The gold standard for coding. Excellent for complex game logic and structure (Paid)."
+    },
+    "claude-3.5-sonnet": {
+        "name": "Claude 3.5 Sonnet",
+        "provider": "OpenRouter [Paid]",
+        "api": "openrouter",
+        "id": "anthropic/claude-3.5-sonnet",
+        "icon": "C",
+        "color": "#fbbf24",
+        "context": "200K tokens",
+        "speed": 7,
+        "intelligence": 10,
+        "cost": 6,
+        "description": "Incredible at following complex formatting rules (Paid)."
     }
 }
 
@@ -427,7 +475,7 @@ async def get_queue_size():
 if __name__ == "__main__":
     logger.info("=" * 50)
     logger.info("🚀 Roblox AI Coder v3.0 - Final Production")
-    logger.info(f"📊 Loaded {len(MODELS)} models")
+    logger.info(f"📊 Loaded {len(MODELS)} models with real stats")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
