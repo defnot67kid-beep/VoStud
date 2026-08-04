@@ -1119,6 +1119,7 @@
             recognition.onerror = (e) => { console.log(e.error); if (e.error === "not-allowed") { micBtn.textContent = "🎤"; micBtn.title = "Mic Denied"; listening = false; } };
         } else { micBtn.disabled = true; micBtn.title = "Speech Recognition isn't supported in this browser."; micBtn.style.opacity = "0.4"; }
 
+        // ==================== INIT ====================
         loadModels();
     </script>
 </body>
