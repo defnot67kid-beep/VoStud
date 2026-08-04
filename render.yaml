@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: vostud
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 1 -k uvicorn.workers.UvicornWorker server:app
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
