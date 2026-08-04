@@ -3,5 +3,4 @@ uvicorn
 python-dotenv
 requests
 gunicorn
-authlib
-httpx
+starlette
