@@ -1,6 +1,6 @@
 """
 Roblox AI Coder - Modular Server
-Supports Home Page (RoStudio style) & Dashboard
+Supports Home Page (/home) & Dashboard (/dashboard)
 """
 
 import os
@@ -14,7 +14,7 @@ from collections import deque
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -80,10 +80,15 @@ app.add_middleware(
 # ==================== SERVE STATIC FILES ====================
 app.mount("/static", StaticFiles(directory="web"), name="static")
 
-# HOME PAGE (ROOT)
-@app.get("/", response_class=HTMLResponse)
+# ROOT REDIRECTS TO HOME
+@app.get("/", response_class=RedirectResponse)
+async def root():
+    return RedirectResponse(url="/home")
+
+# HOME PAGE
+@app.get("/home", response_class=HTMLResponse)
 async def serve_home():
-    html_path = os.path.join("web", "index.html")
+    html_path = os.path.join("web", "home.html")
     try:
         with open(html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
