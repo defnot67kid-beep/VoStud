@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Final Production Server (Supports Model Logos)
+Roblox AI Coder - Final Production Server (Real Google PFP)
 Handles Real Google & Roblox Login, Sessions, and AI Generation
 """
 
@@ -56,7 +56,6 @@ app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 
 # ==================== SERVE STATIC FILES ====================
 app.mount("/static", StaticFiles(directory="web"), name="static")
-# Mount the images folder so the browser can load model logos
 app.mount("/images", StaticFiles(directory="web/images"), name="images")
 
 # ==================== PAGE ROUTES ====================
@@ -104,6 +103,7 @@ async def get_session(request: Request):
             "logged_in": True,
             "name": user.get('name', 'User'),
             "email": user.get('email', 'No Email'),
+            "picture": user.get('picture', None), # Pass the picture URL
             "provider": user.get('provider', 'unknown')
         }
     return {"logged_in": False}
@@ -120,7 +120,7 @@ async def login_google(request: Request):
         f"client_id={GOOGLE_CLIENT_ID}&"
         f"redirect_uri={redirect_uri}&"
         "response_type=code&"
-        "scope=openid%20email%20profile"
+        "scope=openid%20email%20profile" # Added 'profile' scope for PFP
     )
     return RedirectResponse(url=auth_url)
 
@@ -155,6 +155,7 @@ async def google_callback(request: Request):
                 'id': user_info['id'],
                 'name': user_info['name'],
                 'email': user_info['email'],
+                'picture': user_info.get('picture'), # Google sends the PFP here
                 'provider': 'google'
             }
             logger.info(f"User logged in via Google: {user_info['email']}")
@@ -213,6 +214,7 @@ async def roblox_callback(request: Request):
                 'id': user_info['sub'],
                 'name': user_info['name'],
                 'email': user_info.get('email', 'No Email Provided'),
+                'picture': None, # Roblox doesn't provide PFP via standard OAuth easily
                 'provider': 'roblox'
             }
             logger.info(f"User logged in via Roblox: {user_info['name']}")
@@ -229,7 +231,7 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== AI MODELS (WITH IMAGE URLS) ====================
+# ==================== AI MODELS ====================
 MODELS = {
     "auto": {
         "name": "Auto",
@@ -238,82 +240,70 @@ MODELS = {
         "id": "auto",
         "image": "/images/models/default.png",
         "context": "N/A",
-        "speed": 0,
-        "intelligence": 0,
-        "cost": 0,
+        "speed": 0, "intelligence": 0, "cost": 0,
         "images": False,
         "cost_per_request": "Adapts",
-        "description": "Routes each request to the best model for the job — light models for quick edits, heavyweights for big builds."
+        "description": "Routes each request to the best model for the job."
     },
     "groq-llama": {
         "name": "Llama 3.3 70B",
         "provider": "Groq / Meta",
         "api": "groq",
         "id": "llama-3.3-70b-versatile",
-        "image": "/images/models/meta.png", # Download Meta logo
+        "image": "/images/models/meta.png",
         "context": "128K tokens",
-        "speed": 10,
-        "intelligence": 9,
-        "cost": 1,
+        "speed": 10, "intelligence": 9, "cost": 1,
         "images": False,
         "cost_per_request": "Free",
-        "description": "Ultra-fast coding model via Groq's free tier. Blazing speed and intelligent enough for 95% of scripts."
+        "description": "Ultra-fast coding model via Groq's free tier."
     },
     "groq-mixtral": {
         "name": "Mixtral 8x7B",
         "provider": "Groq / Mistral",
         "api": "groq",
         "id": "mixtral-8x7b-32768",
-        "image": "/images/models/mistral.png", # Download Mistral logo
+        "image": "/images/models/mistral.png",
         "context": "32K tokens",
-        "speed": 8,
-        "intelligence": 7,
-        "cost": 1,
+        "speed": 8, "intelligence": 7, "cost": 1,
         "images": False,
         "cost_per_request": "Free",
-        "description": "Excellent legacy model for logic and math-heavy scripts. Very fast and completely free."
+        "description": "Excellent legacy model."
     },
     "deepseek-v3": {
         "name": "DeepSeek V3",
         "provider": "DeepSeek",
         "api": "openrouter",
         "id": "deepseek/deepseek-chat",
-        "image": "/images/models/deepseek.png", # Download DeepSeek logo
+        "image": "/images/models/deepseek.png",
         "context": "64K tokens",
-        "speed": 9,
-        "intelligence": 10,
-        "cost": 1,
+        "speed": 9, "intelligence": 10, "cost": 1,
         "images": False,
         "cost_per_request": "Free",
-        "description": "Open-source powerhouse. Easily rivals GPT-4 for coding and is completely free."
+        "description": "Open-source powerhouse."
     },
     "gemini-2.0-flash": {
         "name": "Gemini 2.0 Flash",
         "provider": "Google",
         "api": "openrouter",
         "id": "google/gemini-2.0-flash-exp",
-        "image": "/images/models/google.png", # Download Google logo
+        "image": "/images/models/google.png",
         "context": "1M tokens",
-        "speed": 10,
-        "intelligence": 7,
-        "cost": 1,
+        "speed": 10, "intelligence": 7, "cost": 1,
         "images": True,
         "cost_per_request": "Free",
-        "description": "Sub-second latency. Great for rapid prototyping, boilerplate, and utility scripts."
+        "description": "Sub-second latency."
     },
     "qwen-2.5-coder": {
         "name": "Qwen 2.5 Coder 7B",
         "provider": "Alibaba",
         "api": "openrouter",
         "id": "qwen/qwen-2.5-coder-7b-instruct",
-        "image": "/images/models/alibaba.png", # Download Alibaba / Qwen logo
+        "image": "/images/models/alibaba.png",
         "context": "32K tokens",
-        "speed": 8,
-        "intelligence": 6,
-        "cost": 1,
+        "speed": 8, "intelligence": 6, "cost": 1,
         "images": False,
         "cost_per_request": "Free",
-        "description": "Tiny and lightning fast. Perfect for small Lua utility scripts and basic functions."
+        "description": "Tiny and lightning fast."
     },
     "mistral-7b-instruct": {
         "name": "Mistral 7B",
@@ -322,48 +312,41 @@ MODELS = {
         "id": "mistralai/mistral-7b-instruct",
         "image": "/images/models/mistral.png",
         "context": "8K tokens",
-        "speed": 7,
-        "intelligence": 5,
-        "cost": 1,
+        "speed": 7, "intelligence": 5, "cost": 1,
         "images": False,
         "cost_per_request": "Free",
-        "description": "Lightweight, fast, and completely free. Good for quick drafts."
+        "description": "Lightweight and fast."
     },
     "gpt-4o": {
         "name": "GPT-4o",
         "provider": "OpenAI",
         "api": "openrouter",
         "id": "openai/gpt-4o",
-        "image": "/images/models/openai.png", # Download OpenAI logo
+        "image": "/images/models/openai.png",
         "context": "128K tokens",
-        "speed": 8,
-        "intelligence": 10,
-        "cost": 8,
+        "speed": 8, "intelligence": 10, "cost": 8,
         "images": True,
         "cost_per_request": "$0.03 - $0.10",
-        "description": "The gold standard for coding. Excellent for complex game logic and structure (Paid)."
+        "description": "The gold standard for coding."
     },
     "claude-3.5-sonnet": {
         "name": "Claude 3.5 Sonnet",
         "provider": "Anthropic",
         "api": "openrouter",
         "id": "anthropic/claude-3.5-sonnet",
-        "image": "/images/models/anthropic.png", # Download Anthropic logo
+        "image": "/images/models/anthropic.png",
         "context": "200K tokens",
-        "speed": 7,
-        "intelligence": 10,
-        "cost": 6,
+        "speed": 7, "intelligence": 10, "cost": 6,
         "images": True,
         "cost_per_request": "$0.03 - $0.08",
-        "description": "Incredible at following complex formatting rules (Paid)."
+        "description": "Incredible formatting."
     }
 }
 
-# ==================== QUEUE ====================
+# ==================== QUEUE & HELPERS ====================
 code_queue = deque()
 MAX_QUEUE_SIZE = 100
 
-# ==================== PYDANTIC MODELS ====================
 class GenerateRequest(BaseModel):
     prompt: str
     model_id: str = "auto"
@@ -380,7 +363,6 @@ class StatusResponse(BaseModel):
     queue_size: int
     models_loaded: int
 
-# ==================== HELPERS ====================
 def clean_code(code: str) -> str:
     if not code: return ""
     code = re.sub(r'```lua\s*', '', code)
@@ -428,7 +410,6 @@ def generate_with_openrouter(model_id: str, prompt: str) -> str:
     if response.status_code != 200: raise Exception(f"OpenRouter Error: {response.text}")
     return clean_code(response.json()["choices"][0]["message"]["content"])
 
-# ==================== API ENDPOINTS ====================
 @app.get("/status", response_model=StatusResponse)
 async def get_status():
     return StatusResponse(status="online", queue_size=len(code_queue), models_loaded=len(MODELS))
@@ -439,40 +420,21 @@ async def get_models():
 
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_code(request: GenerateRequest):
-    if not request.prompt:
-        raise HTTPException(status_code=400, detail="No prompt provided")
-    
+    if not request.prompt: raise HTTPException(status_code=400, detail="No prompt provided")
     model_id = request.model_id
     if model_id == "auto":
-        if GROQ_API_KEY:
-            model_id = "groq-llama"
-        else:
-            model_id = "deepseek-v3"
-            
+        if GROQ_API_KEY: model_id = "groq-llama"
+        else: model_id = "deepseek-v3"
     model_config = MODELS.get(model_id)
-    if not model_config:
-        raise HTTPException(status_code=400, detail="Invalid model ID")
-    
+    if not model_config: raise HTTPException(status_code=400, detail="Invalid model ID")
     try:
-        if model_config["api"] == "groq":
-            code = generate_with_groq(model_config["id"], request.prompt)
-        else:
-            code = generate_with_openrouter(model_config["id"], request.prompt)
-        
+        if model_config["api"] == "groq": code = generate_with_groq(model_config["id"], request.prompt)
+        else: code = generate_with_openrouter(model_config["id"], request.prompt)
         code_id = str(uuid.uuid4())
         script_name = request.prompt[:30].replace(" ", "_").replace("/", "_") + "_Script"
-        
-        code_queue.append({
-            "id": code_id,
-            "code": code,
-            "scriptName": script_name,
-            "destination": request.destination,
-            "timestamp": time.time()
-        })
+        code_queue.append({"id": code_id, "code": code, "scriptName": script_name, "destination": request.destination, "timestamp": time.time()})
         if len(code_queue) > MAX_QUEUE_SIZE: code_queue.popleft()
-        
         return GenerateResponse(code=code, queued=True, id=code_id, model_used=model_config["name"])
-        
     except Exception as e:
         logger.error(f"Generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -501,7 +463,7 @@ async def get_queue_size():
 # ==================== RUN ====================
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v3.0 - Final Production (Logos)")
+    logger.info("🚀 Roblox AI Coder v3.0 - Real Google PFP")
     logger.info(f"📊 Loaded {len(MODELS)} models with real stats")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
