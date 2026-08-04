@@ -1,6 +1,6 @@
 """
 Roblox AI Coder - Modular Server
-Supports Home Page (/home) & Dashboard (/dashboard)
+Supports Home (/home), Signup (/signup) & Dashboard (/dashboard)
 """
 
 import os
@@ -94,6 +94,16 @@ async def serve_home():
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Home page not found.</h1>")
+
+# SIGNUP PAGE
+@app.get("/signup", response_class=HTMLResponse)
+async def serve_signup():
+    html_path = os.path.join("web", "signup.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Signup page not found.</h1>")
 
 # DASHBOARD PAGE
 @app.get("/dashboard", response_class=HTMLResponse)
