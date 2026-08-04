@@ -370,14 +370,71 @@
         .filter-btn { background: transparent; border: 1px solid #27272a; color: #a1a1aa; padding: 6px 16px; border-radius: 100px; font-size: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
         .filter-btn:hover { background: #27272a; color: #fff; }
 
-        .section-label { font-size: 11px; color: #6b7280; font-weight: 600; margin: 12px 0 8px 0; letter-spacing: 0.5px; }
-        .model-list-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: 0.2s; margin-bottom: 4px; }
+        /* NEW: Auto Section Styling */
+        .auto-section {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            background: transparent;
+            border-radius: 10px;
+            opacity: 0.6; /* Grey out */
+            cursor: not-allowed;
+            pointer-events: none; /* Prevent clicking */
+        }
+        .auto-section .list-icon {
+            width: 28px; height: 28px;
+            background: #1f1f1f;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #6b7280;
+            font-size: 14px;
+            margin-right: 12px;
+        }
+        .auto-section .auto-info {
+            display: flex; flex-direction: column;
+            flex: 1;
+        }
+        .auto-section .auto-info .auto-title {
+            font-size: 14px; font-weight: 500; color: #9ca3af;
+        }
+        .auto-section .auto-info .auto-desc {
+            font-size: 12px; color: #52525b;
+            margin-top: 2px;
+        }
+        .auto-section .auto-lock {
+            color: #52525b;
+            font-size: 16px;
+        }
+
+        .section-label {
+            font-size: 11px; color: #6b7280; font-weight: 600; margin: 12px 0 8px 0; letter-spacing: 0.5px;
+        }
+        .model-list-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: 0.2s; margin-bottom: 4px;
+        }
         .model-list-item:hover { background: #27272a; }
+        .model-list-item.active { background: #27272a; border-left: 3px solid #a855f7; }
+        
         .list-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
         .list-info { display: flex; flex-direction: column; flex: 1; }
         .list-name { font-size: 14px; font-weight: 500; }
         .list-desc { font-size: 12px; color: #6b7280; }
 
+        /* "SHOW MORE MODELS" Button */
+        .show-more-btn {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; margin-top: 8px; border-radius: 8px;
+            color: #e5e7eb; font-size: 13px; font-weight: 500; cursor: pointer;
+            transition: 0.2s;
+        }
+        .show-more-btn:hover { background: #1f1f1f; }
+        .show-more-btn .badge {
+            background: #27272a; padding: 2px 10px; border-radius: 100px; font-size: 12px; color: #9ca3af;
+        }
+
+        /* Modal Right Panel Details */
         .detail-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
         .detail-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; }
         .detail-title { font-size: 20px; font-weight: 600; }
@@ -388,28 +445,36 @@
         .bar-segment.filled-green { background: #22c55e; }
         .bar-segment.filled-yellow { background: #eab308; }
         .bar-segment.filled-red { background: #ef4444; }
+        .bar-segment.filled-adapt { background: #52525b; } /* For Auto bars if needed */
+        
         .detail-divider { border: none; border-top: 1px solid #27272a; margin: 16px 0; }
         
         .detail-row { 
             display: flex; 
             justify-content: space-between; 
             font-size: 14px; 
-            padding: 8px 0; 
+            padding: 10px 0; 
             color: #6b7280; 
-            border-bottom: 1px solid #27272a; 
+            border-bottom: 1px solid #1f1f1f; 
         }
         .detail-row:last-child { border-bottom: none; }
         .detail-row span:last-child { color: #fff; font-weight: 500; }
         
         .detail-row svg {
-            width: 18px;
-            height: 18px;
-            stroke: currentColor;
-            stroke-width: 2;
-            fill: none;
-            margin-right: 10px;
-            vertical-align: middle;
+            width: 18px; height: 18px;
+            stroke: currentColor; stroke-width: 2; fill: none;
+            margin-right: 10px; vertical-align: middle;
         }
+
+        /* Modal Footer */
+        .modal-footer {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 16px 24px; border-top: 1px solid #1f1f1f;
+            background: #17171a; border-radius: 0 0 20px 20px;
+            display: flex; justify-content: space-between;
+            font-size: 12px; color: #6b7280;
+        }
+        .modal-footer span:last-child { color: #52525b; }
     </style>
 </head>
 <body>
@@ -587,9 +652,30 @@
                     <button class="filter-btn" style="background:#27272a; border-color:#52525b; color:#fff;">All providers</button>
                     <button class="filter-btn">Popularity</button>
                 </div>
+
+                <!-- Auto Section (Greyed Out) -->
+                <div class="auto-section">
+                    <div class="list-icon">🌙</div>
+                    <div class="auto-info">
+                        <div class="auto-title">Auto</div>
+                        <div class="auto-desc">Routes each request to the best model for the job.</div>
+                    </div>
+                    <div class="auto-lock">🔒</div>
+                </div>
+
+                <!-- All Models Section -->
                 <div class="section-label">ALL MODELS</div>
                 <div id="modelListContainer"></div>
+
+                <!-- Show More (Visual only) -->
+                <div class="show-more-btn">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 12px;">▼</span> SHOW MORE MODELS
+                    </span>
+                    <span class="badge">13</span>
+                </div>
             </div>
+
             <div class="modal-right" id="detailPanel">
                 <div class="detail-header">
                     <div class="detail-icon" id="detailIcon" style="background:#7c3aed;">L</div>
@@ -607,6 +693,12 @@
                 <div class="detail-row"><span>Provider</span><span id="detailProvider">Groq</span></div>
                 <div class="detail-row"><span>Images</span><span id="detailImages">Supported</span></div>
                 <div class="detail-row"><span>Per request</span><span id="detailPrice">Free</span></div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <span id="modelCount">8 models</span>
+                <span>Plus unlocks premium tiers</span>
             </div>
         </div>
     </div>
@@ -657,7 +749,7 @@
         loadUserProfile();
 
         // ==================== DYNAMICALLY LOAD MODELS ====================
-        let selectedModelId = "auto"; // Default to Auto
+        let selectedModelId = null;
         let availableModels = {};
 
         const modelTrigger = document.getElementById('modelTrigger');
@@ -667,6 +759,7 @@
         const modelListContainer = document.getElementById('modelListContainer');
         const detailPanel = document.getElementById('detailPanel');
         const searchInput = document.getElementById('searchInput');
+        const modelCountEl = document.getElementById('modelCount');
 
         async function loadModels() {
             try {
@@ -674,13 +767,19 @@
                 const data = await res.json();
                 availableModels = data.models || {};
                 
-                // Default to Auto
-                if (availableModels["auto"]) {
-                    selectedModelId = "auto";
-                    const first = availableModels["auto"];
-                    triggerIcon.textContent = first.icon || '🌙';
-                    triggerIcon.style.background = first.color || '#6b7280';
-                    triggerName.textContent = first.name || 'Auto';
+                // Skip the "auto" model for the default selection and filter it out of ALL MODELS
+                const modelKeys = Object.keys(availableModels).filter(key => key !== 'auto');
+                
+                // Update model count
+                modelCountEl.textContent = `${modelKeys.length} models`;
+
+                // Select the first real model by default
+                if (modelKeys.length > 0) {
+                    selectedModelId = modelKeys[0];
+                    const first = availableModels[selectedModelId];
+                    triggerIcon.textContent = first.icon || '?';
+                    triggerIcon.style.background = first.color || '#7c3aed';
+                    triggerName.textContent = first.name || 'Unknown';
                 }
             } catch (error) {
                 console.error('Failed to load models:', error);
@@ -699,30 +798,21 @@
 
         function renderModelList(filter) {
             modelListContainer.innerHTML = "";
-            Object.entries(availableModels).forEach(([key, model]) => {
+            
+            // Filter out the 'auto' key so we don't double-add it
+            const modelEntries = Object.entries(availableModels).filter(([key]) => key !== 'auto');
+            
+            modelEntries.forEach(([key, model]) => {
                 if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
                 
-                // Special styling for the Auto item (Add the lock icon and Plus badge text)
-                const isAuto = key === "auto";
-                const listIcon = isAuto ? '🌙' : (model.icon || '?');
-                const listDesc = isAuto ? 'Routes each request to the best model for the job.' : model.provider;
-                
                 const item = document.createElement('div');
-                item.className = 'model-list-item';
-                
-                // Add a tiny lock icon inline for Auto
-                let lockHtml = '';
-                if (isAuto) {
-                    lockHtml = `<span style="margin-left:auto; color:#52525b; font-size: 16px;">🔒</span>`;
-                }
-
+                item.className = `model-list-item${selectedModelId === key ? ' active' : ''}`;
                 item.innerHTML = `
-                    <div class="list-icon" style="background:${model.color || '#6b7280'};">${listIcon}</div>
+                    <div class="list-icon" style="background:${model.color || '#6b7280'};">${model.icon || '?'}</div>
                     <div class="list-info">
-                        <div class="list-name">${model.name} ${isAuto ? '<span style="font-size:10px; color:#8b5cf6; background:rgba(139,92,246,0.15); padding:2px 6px; border-radius:4px; margin-left:6px;">Plus</span>' : ''}</div>
-                        <div class="list-desc">${listDesc}</div>
+                        <div class="list-name">${model.name}</div>
+                        <div class="list-desc">${model.provider}</div>
                     </div>
-                    ${lockHtml}
                 `;
                 item.onmouseenter = () => updateDetailPanel(key);
                 item.onclick = () => { selectModel(key); closeModal(); };
@@ -743,23 +833,13 @@
             document.getElementById('detailImages').textContent = m.images ? 'Supported' : 'Not supported';
             document.getElementById('detailPrice').textContent = m.cost_per_request || 'Unknown';
             
-            // Handle Auto mode stats (Adapts)
-            const isAuto = id === "auto";
-            renderBars('detailSpeed', isAuto ? 0 : (m.speed || 5), isAuto ? 'filled-adapt' : 'filled-green', isAuto);
-            renderBars('detailIntel', isAuto ? 0 : (m.intelligence || 5), isAuto ? 'filled-adapt' : 'filled-yellow', isAuto);
-            renderBars('detailCost', isAuto ? 0 : (m.cost || 5), isAuto ? 'filled-adapt' : 'filled-red', isAuto);
+            renderBars('detailSpeed', m.speed || 5, 'filled-green');
+            renderBars('detailIntel', m.intelligence || 5, 'filled-yellow');
+            renderBars('detailCost', m.cost || 5, 'filled-red');
         }
 
-        function renderBars(containerId, value, fillClass, isAdapt) {
+        function renderBars(containerId, value, fillClass) {
             const container = document.getElementById(containerId); container.innerHTML = "";
-            if (isAdapt) {
-                // Auto Mode: Display a text instead of bars
-                const label = document.createElement('div');
-                label.style.cssText = "font-size: 14px; color: #fff; width: 100%; text-align: right;";
-                label.textContent = "Adapts";
-                container.appendChild(label);
-                return;
-            }
             for (let i = 0; i < 10; i++) {
                 const seg = document.createElement('div'); seg.className = `bar-segment${i < value ? ' ' + fillClass : ''}`; container.appendChild(seg);
             }
