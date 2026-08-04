@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Final Production Server (Auto Mode + Real Stats)
+Roblox AI Coder - Final Production Server (Supports Model Logos)
 Handles Real Google & Roblox Login, Sessions, and AI Generation
 """
 
@@ -52,11 +52,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Critical: Allows cookies to store user sessions
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 
 # ==================== SERVE STATIC FILES ====================
 app.mount("/static", StaticFiles(directory="web"), name="static")
+# Mount the images folder so the browser can load model logos
+app.mount("/images", StaticFiles(directory="web/images"), name="images")
 
 # ==================== PAGE ROUTES ====================
 @app.get("/", response_class=RedirectResponse)
@@ -74,7 +75,6 @@ async def serve_home():
 
 @app.get("/signup", response_class=HTMLResponse)
 async def serve_signup(request: Request):
-    # If user is already logged in, send them straight to dashboard
     user = request.session.get('user')
     if user:
         return RedirectResponse(url="/dashboard")
@@ -114,7 +114,6 @@ async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
         return HTMLResponse(content="<h1>Google Login not configured.</h1>")
     
-    # Exact URL match required by Google
     redirect_uri = str(request.base_url) + "auth/google/callback"
     auth_url = (
         "https://accounts.google.com/o/oauth2/v2/auth?"
@@ -173,7 +172,6 @@ async def login_roblox(request: Request):
     if not ROBLOX_CLIENT_ID:
         return HTMLResponse(content="<h1>Roblox Login not configured.</h1>")
     
-    # Exact URL match required by Roblox
     redirect_uri = str(request.base_url) + "auth/roblox/callback"
     auth_url = (
         "https://apis.roblox.com/oauth/v1/authorize?"
@@ -231,30 +229,28 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== AI MODELS (EXPANDED FREE OPTIONS + REAL STATS) ====================
+# ==================== AI MODELS (WITH IMAGE URLS) ====================
 MODELS = {
     "auto": {
         "name": "Auto",
         "provider": "Dynamic Router",
         "api": "auto",
         "id": "auto",
-        "icon": "🌙",
-        "color": "#6b7280",
+        "image": "/images/models/default.png",
         "context": "N/A",
-        "speed": 0,        # 0 = Adapts
-        "intelligence": 0, # 0 = Adapts
-        "cost": 0,         # 0 = Adapts
-        "images": True,
+        "speed": 0,
+        "intelligence": 0,
+        "cost": 0,
+        "images": False,
         "cost_per_request": "Adapts",
         "description": "Routes each request to the best model for the job — light models for quick edits, heavyweights for big builds."
     },
     "groq-llama": {
         "name": "Llama 3.3 70B",
-        "provider": "Groq [Free]",
+        "provider": "Groq / Meta",
         "api": "groq",
         "id": "llama-3.3-70b-versatile",
-        "icon": "L",
-        "color": "#7c3aed",
+        "image": "/images/models/meta.png", # Download Meta logo
         "context": "128K tokens",
         "speed": 10,
         "intelligence": 9,
@@ -265,11 +261,10 @@ MODELS = {
     },
     "groq-mixtral": {
         "name": "Mixtral 8x7B",
-        "provider": "Groq [Free]",
+        "provider": "Groq / Mistral",
         "api": "groq",
         "id": "mixtral-8x7b-32768",
-        "icon": "M",
-        "color": "#2563eb",
+        "image": "/images/models/mistral.png", # Download Mistral logo
         "context": "32K tokens",
         "speed": 8,
         "intelligence": 7,
@@ -280,11 +275,10 @@ MODELS = {
     },
     "deepseek-v3": {
         "name": "DeepSeek V3",
-        "provider": "OpenRouter [Free]",
+        "provider": "DeepSeek",
         "api": "openrouter",
         "id": "deepseek/deepseek-chat",
-        "icon": "D",
-        "color": "#f59e0b",
+        "image": "/images/models/deepseek.png", # Download DeepSeek logo
         "context": "64K tokens",
         "speed": 9,
         "intelligence": 10,
@@ -295,11 +289,10 @@ MODELS = {
     },
     "gemini-2.0-flash": {
         "name": "Gemini 2.0 Flash",
-        "provider": "OpenRouter [Free]",
+        "provider": "Google",
         "api": "openrouter",
         "id": "google/gemini-2.0-flash-exp",
-        "icon": "G",
-        "color": "#f97316",
+        "image": "/images/models/google.png", # Download Google logo
         "context": "1M tokens",
         "speed": 10,
         "intelligence": 7,
@@ -310,11 +303,10 @@ MODELS = {
     },
     "qwen-2.5-coder": {
         "name": "Qwen 2.5 Coder 7B",
-        "provider": "OpenRouter [Free]",
+        "provider": "Alibaba",
         "api": "openrouter",
         "id": "qwen/qwen-2.5-coder-7b-instruct",
-        "icon": "Q",
-        "color": "#22c55e",
+        "image": "/images/models/alibaba.png", # Download Alibaba / Qwen logo
         "context": "32K tokens",
         "speed": 8,
         "intelligence": 6,
@@ -325,11 +317,10 @@ MODELS = {
     },
     "mistral-7b-instruct": {
         "name": "Mistral 7B",
-        "provider": "OpenRouter [Free]",
+        "provider": "Mistral",
         "api": "openrouter",
         "id": "mistralai/mistral-7b-instruct",
-        "icon": "M",
-        "color": "#a855f7",
+        "image": "/images/models/mistral.png",
         "context": "8K tokens",
         "speed": 7,
         "intelligence": 5,
@@ -340,11 +331,10 @@ MODELS = {
     },
     "gpt-4o": {
         "name": "GPT-4o",
-        "provider": "OpenRouter [Paid]",
+        "provider": "OpenAI",
         "api": "openrouter",
         "id": "openai/gpt-4o",
-        "icon": "G",
-        "color": "#d946ef",
+        "image": "/images/models/openai.png", # Download OpenAI logo
         "context": "128K tokens",
         "speed": 8,
         "intelligence": 10,
@@ -355,11 +345,10 @@ MODELS = {
     },
     "claude-3.5-sonnet": {
         "name": "Claude 3.5 Sonnet",
-        "provider": "OpenRouter [Paid]",
+        "provider": "Anthropic",
         "api": "openrouter",
         "id": "anthropic/claude-3.5-sonnet",
-        "icon": "C",
-        "color": "#fbbf24",
+        "image": "/images/models/anthropic.png", # Download Anthropic logo
         "context": "200K tokens",
         "speed": 7,
         "intelligence": 10,
@@ -453,11 +442,8 @@ async def generate_code(request: GenerateRequest):
     if not request.prompt:
         raise HTTPException(status_code=400, detail="No prompt provided")
     
-    # === AUTO MODE LOGIC ===
     model_id = request.model_id
     if model_id == "auto":
-        # Smart Router: Use the best free model for Roblox Lua
-        # If you have Groq set up, use Llama 3.3. Otherwise use DeepSeek via OpenRouter.
         if GROQ_API_KEY:
             model_id = "groq-llama"
         else:
@@ -515,7 +501,7 @@ async def get_queue_size():
 # ==================== RUN ====================
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v3.0 - Final Production")
+    logger.info("🚀 Roblox AI Coder v3.0 - Final Production (Logos)")
     logger.info(f"📊 Loaded {len(MODELS)} models with real stats")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
