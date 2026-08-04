@@ -133,10 +133,7 @@
             justify-content: center;
         }
         
-        /* Google Icon SVG */
         .google-icon svg { width: 20px; height: 20px; }
-        
-        /* Roblox Icon SVG */
         .roblox-icon svg { width: 20px; height: 20px; fill: #ffffff; }
 
         /* ==================== FOOTER TEXT ==================== */
@@ -187,26 +184,30 @@
         <h1>Create An<br>Account</h1>
         <p class="subtitle">Begin your journey to the moon</p>
 
-        <button class="oauth-btn" id="googleBtn">
-            <span class="oauth-icon google-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M23.52 12.29C23.52 11.44 23.44 10.62 23.3 9.83H12V14.5H18.47C18.19 15.97 17.35 17.22 16.11 18.08V21.02H19.94C22.2 18.93 23.52 15.87 23.52 12.29Z" fill="#4285F4"/>
-                    <path d="M12 24C15.24 24 17.96 22.92 19.94 21.02L16.11 18.08C14.98 18.83 13.61 19.27 12 19.27C8.87 19.27 6.22 17.15 5.23 14.32H1.22V17.38C3.18 21.25 7.33 24 12 24Z" fill="#34A853"/>
-                    <path d="M5.23 14.32C4.96 13.52 4.82 12.67 4.82 11.82C4.82 10.97 4.96 10.12 5.23 9.32V6.26H1.22C0.44 7.81 0 9.57 0 11.5C0 13.43 0.44 15.19 1.22 16.74L5.23 14.32Z" fill="#FBBC05"/>
-                    <path d="M12 4.73C13.77 4.73 15.35 5.35 16.57 6.52L20.03 3.06C17.96 1.15 15.24 0 12 0C7.33 0 3.18 2.75 1.22 6.62L5.23 9.68C6.22 6.85 8.87 4.73 12 4.73Z" fill="#EA4335"/>
-                </svg>
-            </span>
-            Continue with Google
-        </button>
+        <a href="/auth/google" style="text-decoration: none; width: 100%;">
+            <button class="oauth-btn">
+                <span class="oauth-icon google-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M23.52 12.29C23.52 11.44 23.44 10.62 23.3 9.83H12V14.5H18.47C18.19 15.97 17.35 17.22 16.11 18.08V21.02H19.94C22.2 18.93 23.52 15.87 23.52 12.29Z" fill="#4285F4"/>
+                        <path d="M12 24C15.24 24 17.96 22.92 19.94 21.02L16.11 18.08C14.98 18.83 13.61 19.27 12 19.27C8.87 19.27 6.22 17.15 5.23 14.32H1.22V17.38C3.18 21.25 7.33 24 12 24Z" fill="#34A853"/>
+                        <path d="M5.23 14.32C4.96 13.52 4.82 12.67 4.82 11.82C4.82 10.97 4.96 10.12 5.23 9.32V6.26H1.22C0.44 7.81 0 9.57 0 11.5C0 13.43 0.44 15.19 1.22 16.74L5.23 14.32Z" fill="#FBBC05"/>
+                        <path d="M12 4.73C13.77 4.73 15.35 5.35 16.57 6.52L20.03 3.06C17.96 1.15 15.24 0 12 0C7.33 0 3.18 2.75 1.22 6.62L5.23 9.68C6.22 6.85 8.87 4.73 12 4.73Z" fill="#EA4335"/>
+                    </svg>
+                </span>
+                Continue with Google
+            </button>
+        </a>
 
-        <button class="oauth-btn" id="robloxBtn">
-            <span class="oauth-icon roblox-icon">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L2 7.5L12 13L22 7.5L12 2ZM2 17L12 22.5L22 17V9.5L12 15L2 9.5V17Z"/>
-                </svg>
-            </span>
-            Continue with Roblox
-        </button>
+        <a href="/auth/roblox" style="text-decoration: none; width: 100%;">
+            <button class="oauth-btn">
+                <span class="oauth-icon roblox-icon">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7.5L12 13L22 7.5L12 2ZM2 17L12 22.5L22 17V9.5L12 15L2 9.5V17Z"/>
+                    </svg>
+                </span>
+                Continue with Roblox
+            </button>
+        </a>
 
         <p class="legal-text">
             By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
@@ -234,34 +235,6 @@
             star.style.animationDelay = Math.random() * 5 + 's';
             starfield.appendChild(star);
         }
-
-        // ==================== BUTTON LOGIC ====================
-        document.getElementById('googleBtn').addEventListener('click', () => {
-            // Simulate a loading state
-            const btn = document.getElementById('googleBtn');
-            btn.innerHTML = '⏳ Connecting...';
-            btn.style.opacity = '0.7';
-            btn.disabled = true;
-
-            setTimeout(() => {
-                alert('Google Sign-up would be handled by your backend here.');
-                btn.innerHTML = 'Continue with Google';
-                btn.style.opacity = '1';
-                btn.disabled = false;
-            }, 1500);
-        });
-
-        document.getElementById('robloxBtn').addEventListener('click', () => {
-            const btn = document.getElementById('robloxBtn');
-            btn.innerHTML = '⏳ Redirecting...';
-            btn.style.opacity = '0.7';
-            btn.disabled = true;
-
-            // Simulate successful login and redirect to dashboard
-            setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 1000);
-        });
     </script>
 </body>
 </html>
