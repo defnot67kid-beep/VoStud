@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoStudio - Build with AI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #09090b;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ==================== TOP NAV ==================== */
+        .top-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 24px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        .logo-icon {
+            width: 28px; height: 28px;
+            background: radial-gradient(circle at 30% 30%, #a855f7, #7c3aed);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            margin-right: 32px;
+        }
+        .nav-links a {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .nav-links a:hover { color: #fff; }
+
+        .nav-btn {
+            background: #ffffff;
+            color: #09090b;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .nav-btn:hover { transform: scale(1.05); }
+
+        /* ==================== BACKGROUND WAVE ==================== */
+        .wave-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #09090b;
+            z-index: 0;
+            overflow: hidden;
+        }
+        
+        /* Purple grid pattern */
+        .wave-bg::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+            background-size: 100% 100%;
+            z-index: 1;
+        }
+
+        /* Moving purple dot tracker */
+        .mouse-glow {
+            position: absolute;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.25) 0%, rgba(139, 92, 246, 0.05) 40%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease-out;
+            z-index: 1;
+            mix-blend-mode: screen;
+        }
+
+        /* ==================== HERO SECTION ==================== */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            width: 100%; max-width: 1000px;
+            margin: 0 auto;
+            padding: 120px 20px 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .beta-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 14px;
+            border-radius: 100px;
+            font-size: 12px;
+            color: #a1a1aa;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .hero-title {
+            font-size: 72px;
+            line-height: 1.05;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #a855f7 0%, #d8b4fe 40%, #ffffff 70%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: #a1a1aa;
+            text-align: center;
+            font-weight: 400;
+            margin-bottom: 40px;
+        }
+
+        /* ==================== THE BIG INPUT AREA ==================== */
+        .chat-input-container {
+            width: 100%;
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .chat-input-container:focus-within {
+            border-color: #52525b;
+            box-shadow: 0 20px 60px rgba(124, 58, 237, 0.15);
+        }
+
+        .input-left-icon {
+            color: #a1a1aa;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .input-left-icon:hover { background: #27272a; color: #fff; }
+
+        .main-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            height: 30px;
+        }
+        .main-input::placeholder { color: #52525b; }
+
+        .send-btn {
+            background: #7c3aed;
+            color: #fff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .send-btn:hover {
+            background: #6d28d9;
+            transform: scale(1.05);
+        }
+        .send-btn svg { width: 20px; height: 20px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <!-- BACKGROUND -->
+    <div class="wave-bg">
+        <div class="mouse-glow" id="mouseGlow"></div>
+    </div>
+
+    <!-- TOP NAV -->
+    <nav class="top-nav">
+        <div class="logo-area">
+            <div class="logo-icon">🤖</div>
+            ROSTUDIO
+        </div>
+        <div style="display: flex; align-items: center;">
+            <div class="nav-links">
+                <a href="#">How it works</a>
+                <a href="#">FAQ</a>
+                <a href="#">Pricing</a>
+            </div>
+            <button class="nav-btn" onclick="window.location.href='/dashboard'">Start for Free</button>
+        </div>
+    </nav>
+
+    <!-- MAIN HERO -->
+    <div class="main-container">
+        <div class="beta-badge">Beta</div>
+        
+        <h1 class="hero-title">
+            Build what you<br>
+            can't build alone.
+        </h1>
+        
+        <p class="hero-subtitle">Describe a system or an interface. RoStudio builds it.</p>
+        
+        <div class="chat-input-container">
+            <span class="input-left-icon">+</span>
+            <input type="text" class="main-input" id="homeInput" placeholder="Describe a system or an interface..." />
+            <button class="send-btn" onclick="goToDashboardWithPrompt()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== MOUSE WAVE EFFECT ====================
+        const glow = document.getElementById('mouseGlow');
+        
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            // Smoothly follow the mouse
+            glow.style.left = x + 'px';
+            glow.style.top = y + 'px';
+        });
+
+        // ==================== NAVIGATION LOGIC ====================
+        function goToDashboardWithPrompt() {
+            const val = document.getElementById('homeInput').value;
+            // Save the prompt to session storage so the dashboard can read it
+            sessionStorage.setItem('prefillPrompt', val);
+            // Redirect to the dashboard
+            window.location.href = '/dashboard';
+        }
+
+        // Allow pressing Enter on the input
+        document.getElementById('homeInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') goToDashboardWithPrompt();
+        });
+    </script>
+</body>
+</html>
