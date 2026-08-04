@@ -18,7 +18,6 @@
             overflow: hidden;
         }
 
-        /* ==================== SIDEBAR ==================== */
         .sidebar {
             width: 260px;
             height: 100vh;
@@ -90,7 +89,6 @@
             margin-bottom: 16px;
         }
 
-        /* Sidebar Bottom Actions */
         .sidebar-actions {
             margin-top: auto;
             display: flex;
@@ -114,14 +112,12 @@
         .action-card .content p { font-size: 11px; color: #6b7280; }
         .action-card .arrow { color: #6b7280; font-size: 14px; }
 
-        /* Upgrade Card Special Styling */
         .action-card.upgrade {
             background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(0, 0, 0, 0.2));
             border-color: rgba(139, 92, 246, 0.2);
         }
         .action-card.upgrade:hover { border-color: rgba(139, 92, 246, 0.5); }
 
-        /* User Profile */
         .user-profile {
             margin-top: 12px;
             padding: 12px 14px;
@@ -158,7 +154,6 @@
         .settings-icon { color: #6b7280; transition: 0.2s; }
         .user-profile:hover .settings-icon { color: #fff; }
 
-        /* ==================== MAIN CONTENT ==================== */
         .main-content {
             flex: 1;
             display: flex;
@@ -215,7 +210,6 @@
             margin-top: 10px; overflow-x: auto; white-space: pre-wrap; border: 1px solid #1a1a1a;
         }
 
-        /* ==================== CHAT BOX ==================== */
         .chat-box {
             width: 100%; max-width: 720px;
             background: #17171a; border: 1px solid #27272a;
@@ -231,7 +225,6 @@
         }
         .chat-textarea::placeholder { color: #52525b; }
 
-        /* ==================== MODERN FILE LIST ==================== */
         #fileListContainer {
             display: none; flex-direction: row; flex-wrap: wrap;
             gap: 12px; margin-bottom: 8px; margin-top: 8px; width: 100%;
@@ -277,7 +270,6 @@
         .upload-progress-container.active { display: block; }
         .upload-progress-bar { height: 100%; background: #8b5cf6; width: 0%; transition: width 0.15s ease; }
 
-        /* ==================== TOOLBAR ==================== */
         .toolbar {
             display: flex; justify-content: space-between; align-items: center; margin-top: 4px;
             border-top: 1px solid #27272a; padding-top: 12px;
@@ -318,7 +310,15 @@
 
         .model-pill { display: flex; align-items: center; gap: 8px; background: #27272a; padding: 4px 12px 4px 6px; border-radius: 100px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
         .model-pill:hover { background: #3f3f46; border-color: #52525b; }
-        .model-icon { width: 20px; height: 20px; border-radius: 6px; background: #f97316; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+        .model-icon { 
+            width: 20px; height: 20px; 
+            border-radius: 6px; 
+            background: transparent !important; 
+            overflow: hidden; 
+            padding: 2px; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .model-icon img { width: 100%; height: 100%; object-fit: contain; }
         .model-text { font-size: 13px; font-weight: 500; color: #f3f4f6; }
         .model-caret { color: #a1a1aa; font-size: 12px; margin-left: 2px; }
 
@@ -328,9 +328,7 @@
 
         .toolbar-right { display: flex; align-items: center; gap: 12px; }
         .microphone-btn { background: transparent; border: none; color: #a1a1aa; font-size: 18px; cursor: pointer; transition: 0.2s; padding: 4px; }
-        .microphone-btn:hover { color: #f3f4f6; }
 
-        /* ==================== FOOTER BUTTONS ==================== */
         .footer-actions { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 24px; width: 100%; }
         .action-btn {
             background: transparent; border: 1px solid #27272a; color: #e5e7eb;
@@ -342,7 +340,6 @@
         .action-btn svg { stroke: #9ca3af; transition: stroke 0.2s ease; width: 16px; height: 16px; }
         .action-btn:hover svg { stroke: #e5e7eb; }
 
-        /* ==================== MODAL OVERLAY ==================== */
         #modalOverlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
@@ -389,6 +386,7 @@
             color: #6b7280;
             font-size: 14px;
             margin-right: 12px;
+            overflow: hidden;
         }
         .auto-section .auto-info {
             display: flex; flex-direction: column;
@@ -416,7 +414,16 @@
         .model-list-item:hover { background: #27272a; }
         .model-list-item.active { background: #27272a; border-left: 3px solid #a855f7; }
         
-        .list-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .list-icon { 
+            width: 28px; height: 28px; 
+            border-radius: 6px; 
+            background: transparent !important; 
+            overflow: hidden; 
+            padding: 2px; 
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .list-icon img { width: 100%; height: 100%; object-fit: contain; }
         .list-info { display: flex; flex-direction: column; flex: 1; }
         .list-name { font-size: 14px; font-weight: 500; }
         .list-desc { font-size: 12px; color: #6b7280; }
@@ -433,7 +440,15 @@
         }
 
         .detail-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-        .detail-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; }
+        .detail-icon { 
+            width: 40px; height: 40px; 
+            border-radius: 10px; 
+            background: transparent !important; 
+            overflow: hidden; 
+            padding: 2px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .detail-icon img { width: 100%; height: 100%; object-fit: contain; }
         .detail-title { font-size: 20px; font-weight: 600; }
         .detail-desc { font-size: 14px; color: #a1a1aa; margin-bottom: 24px; line-height: 1.5; }
         .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #a1a1aa; }
@@ -474,207 +489,100 @@
     </style>
 </head>
 <body>
-
-    <!-- ==================== SIDEBAR ==================== -->
     <div class="sidebar">
-        <div class="sidebar-logo">
-            ROSTUDIO <span class="beta">Beta</span>
-        </div>
-
-        <!-- Navigation -->
+        <div class="sidebar-logo">ROSTUDIO <span class="beta">Beta</span></div>
         <div class="nav-item active">
-            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            Home
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> Home
         </div>
         <div class="nav-item">
-            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            Search
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg> Search
         </div>
         <div class="nav-item">
-            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-            Templates
+            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Templates
         </div>
         <div class="nav-item">
-            <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
-            Models
+            <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg> Models
         </div>
-
         <div class="sidebar-divider"></div>
-
         <div class="sidebar-section-title">Projects</div>
         <div class="sidebar-section-sub">No projects yet</div>
-
         <div class="sidebar-actions">
-            <!-- Join Discord -->
-            <div class="action-card">
-                <div class="content">
-                    <h4>Join Discord</h4>
-                    <p>Perks, updates &amp; support</p>
-                </div>
-                <div class="arrow">→</div>
-            </div>
-
-            <!-- Upgrade to Pro -->
-            <div class="action-card upgrade">
-                <div class="content">
-                    <h4>Upgrade to Pro</h4>
-                    <p>Unlock more features</p>
-                </div>
-                <div class="arrow">→</div>
-            </div>
-
-            <!-- User Profile -->
+            <div class="action-card"><div class="content"><h4>Join Discord</h4><p>Perks, updates &amp; support</p></div><div class="arrow">→</div></div>
+            <div class="action-card upgrade"><div class="content"><h4>Upgrade to Pro</h4><p>Unlock more features</p></div><div class="arrow">→</div></div>
             <div class="user-profile" id="userProfile">
                 <div class="user-info">
                     <div class="pfp" id="userPfp" style="background:#6b7280;">?</div>
                     <div class="user-details">
-                        <div class="user-name" id="userDisplayName">
-                            Loading...
-                            <span class="badge-free">Free</span>
-                        </div>
+                        <div class="user-name" id="userDisplayName">Loading... <span class="badge-free">Free</span></div>
                         <div class="user-email" id="userEmail">Loading...</div>
                     </div>
                 </div>
-                <div class="settings-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                </div>
+                <div class="settings-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== MAIN CONTENT ==================== -->
     <div class="main-content">
-        
-        <!-- Top Bar -->
-        <div class="top-bar">
-            <div class="status-pill">
-                <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Not Paired</span>
-            </div>
-        </div>
-
-        <!-- Chat Section -->
+        <div class="top-bar"><div class="status-pill"><span class="status-dot" id="statusDot"></span><span id="statusText">Not Paired</span></div></div>
         <div id="messages"></div>
-
         <div id="heroArea" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-            <div class="hero-icon">
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10" stroke="#52525b"/>
-                    <circle cx="12" cy="12" r="4" stroke="#fff"/>
-                    <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#52525b"/>
-                </svg>
-            </div>
+            <div class="hero-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke="#52525b"/><circle cx="12" cy="12" r="4" stroke="#fff"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#52525b"/></svg></div>
             <div class="hero-title">What's the vision?</div>
         </div>
-
         <div class="chat-box" id="chatBox">
-            
             <div id="fileListContainer"></div>
-            <div class="upload-progress-container" id="progressContainer">
-                <div class="upload-progress-bar" id="progressBar"></div>
-            </div>
-
+            <div class="upload-progress-container" id="progressContainer"><div class="upload-progress-bar" id="progressBar"></div></div>
             <textarea class="chat-textarea" id="promptInput" rows="1" placeholder="What can I help you with?"></textarea>
-            
             <div class="toolbar">
                 <div class="toolbar-left">
-                    
-                    <!-- + BUTTON -->
                     <div style="position: relative;">
                         <button class="tool-btn" id="plusBtn">+</button>
                         <div class="dropdown-menu" id="dropdownPlus">
-                            <div class="dropdown-item" id="servicesParent">
-                                <span><span class="icon">📁</span> Services</span>
-                                <span class="arrow">▶</span>
-                            </div>
+                            <div class="dropdown-item" id="servicesParent"><span><span class="icon">📁</span> Services</span><span class="arrow">▶</span></div>
                             <div class="dropdown-menu" id="dropdownServices"></div>
-                            <div class="dropdown-item" id="addFilesItem">
-                                <span><span class="icon">➕</span> Add Files</span>
-                            </div>
+                            <div class="dropdown-item" id="addFilesItem"><span><span class="icon">➕</span> Add Files</span></div>
                         </div>
                     </div>
-
-                    <!-- GENERATE BUTTON -->
                     <div style="position: relative;">
-                        <button class="tool-btn" id="generateBtn">
-                            <span id="generateIcon">∞</span> 
-                            <span id="generateLabel">Generate</span> 
-                            <span style="font-size:10px; color:#52525b;">▼</span>
-                        </button>
+                        <button class="tool-btn" id="generateBtn"><span id="generateIcon">∞</span> <span id="generateLabel">Generate</span> <span style="font-size:10px; color:#52525b;">▼</span></button>
                         <div class="dropdown-menu" id="dropdownGenerate"></div>
                     </div>
-                    
                     <div class="toolbar-divider"></div>
-
                     <div class="model-pill" id="modelTrigger">
-                        <div class="model-icon" id="triggerIcon" style="background:#7c3aed;">L</div>
+                        <div class="model-icon" id="triggerIcon"><img src="/images/models/default.png" alt="Model Logo"></div>
                         <span class="model-text" id="triggerName">Llama 3.3 70B</span>
                         <span class="model-caret">▼</span>
                     </div>
-
-                    <div class="scale-toggle">
-                        <button class="scale-btn">R6</button>
-                        <button class="scale-btn active">R15</button>
-                    </div>
-
+                    <div class="scale-toggle"><button class="scale-btn">R6</button><button class="scale-btn active">R15</button></div>
                     <button class="tool-btn">✦</button>
                 </div>
-
-                <div class="toolbar-right">
-                    <button class="microphone-btn" id="micBtn">🎤</button>
-                </div>
+                <div class="toolbar-right"><button class="microphone-btn" id="micBtn">🎤</button></div>
             </div>
         </div>
-
         <div class="footer-actions">
-            <button class="action-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 22v-4M4 12H2M22 12h-2M19.07 4.93l-2.83 2.83M4.93 19.07l2.83-2.83M19.07 19.07l-2.83-2.83M4.93 4.93l2.83 2.83"/><circle cx="12" cy="12" r="4"/></svg>
-                Get the Plugin
-            </button>
-            <button class="action-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                Integrations
-            </button>
+            <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 22v-4M4 12H2M22 12h-2M19.07 4.93l-2.83 2.83M4.93 19.07l2.83-2.83M19.07 19.07l-2.83-2.83M4.93 4.93l2.83 2.83"/><circle cx="12" cy="12" r="4"/></svg> Get the Plugin</button>
+            <button class="action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Integrations</button>
         </div>
     </div>
 
-    <!-- ==================== MODAL ==================== -->
     <div id="modalOverlay">
         <div class="modal-box">
             <button class="close-modal" onclick="closeModal()">✕</button>
             <div class="modal-left">
                 <input type="text" class="search-input" id="searchInput" placeholder="Search models...">
-                <div class="filter-row">
-                    <button class="filter-btn" style="background:#27272a; border-color:#52525b; color:#fff;">All providers</button>
-                    <button class="filter-btn">Popularity</button>
-                </div>
-
-                <!-- Auto Section (Greyed Out) -->
+                <div class="filter-row"><button class="filter-btn" style="background:#27272a; border-color:#52525b; color:#fff;">All providers</button><button class="filter-btn">Popularity</button></div>
                 <div class="auto-section">
                     <div class="list-icon">🌙</div>
-                    <div class="auto-info">
-                        <div class="auto-title">Auto</div>
-                        <div class="auto-desc">Routes each request to the best model for the job.</div>
-                    </div>
+                    <div class="auto-info"><div class="auto-title">Auto</div><div class="auto-desc">Routes each request to the best model for the job.</div></div>
                     <div class="auto-lock">🔒</div>
                 </div>
-
-                <!-- All Models Section -->
                 <div class="section-label">ALL MODELS</div>
                 <div id="modelListContainer"></div>
-
-                <!-- Show More (Visual only) -->
-                <div class="show-more-btn">
-                    <span style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 12px;">▼</span> SHOW MORE MODELS
-                    </span>
-                    <span class="badge">13</span>
-                </div>
+                <div class="show-more-btn"><span style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 12px;">▼</span> SHOW MORE MODELS</span><span class="badge">13</span></div>
             </div>
-
             <div class="modal-right" id="detailPanel">
                 <div class="detail-header">
-                    <div class="detail-icon" id="detailIcon" style="background:#7c3aed;">L</div>
+                    <div class="detail-icon" id="detailIcon"><img src="/images/models/default.png" alt="Model Logo"></div>
                     <div class="detail-title" id="detailTitle">Llama 3.3 70B</div>
                 </div>
                 <div class="detail-desc" id="detailDesc">Ultra-fast coding model via Groq. Great for general scripting.</div>
@@ -690,46 +598,24 @@
                 <div class="detail-row"><span>Images</span><span id="detailImages">Supported</span></div>
                 <div class="detail-row"><span>Per request</span><span id="detailPrice">Free</span></div>
             </div>
-
-            <!-- Modal Footer -->
-            <div class="modal-footer">
-                <span id="modelCount">8 models</span>
-                <span>Plus unlocks premium tiers</span>
-            </div>
+            <div class="modal-footer"><span id="modelCount">8 models</span><span>Plus unlocks premium tiers</span></div>
         </div>
     </div>
 
     <script>
-        // ==================== LOAD REAL USER DATA ====================
         async function loadUserProfile() {
             try {
                 const res = await fetch('/session');
                 const data = await res.json();
-
                 const pfpEl = document.getElementById('userPfp');
                 const nameEl = document.getElementById('userDisplayName');
                 const emailEl = document.getElementById('userEmail');
-
                 if (data.logged_in) {
-                    function stringToColor(str) {
-                        let hash = 0;
-                        for (let i = 0; i < str.length; i++) {
-                            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                        }
-                        let color = '#';
-                        for (let i = 0; i < 3; i++) {
-                            const value = (hash >> (i * 8)) & 0xFF;
-                            color += ('00' + value.toString(16)).substr(-2);
-                        }
-                        return color;
-                    }
-
+                    function stringToColor(str) { let hash = 0; for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); } let color = '#'; for (let i = 0; i < 3; i++) { const value = (hash >> (i * 8)) & 0xFF; color += ('00' + value.toString(16)).substr(-2); } return color; }
                     const email = data.email || 'user@example.com';
                     const name = data.name || email.split('@')[0];
-
                     pfpEl.style.background = stringToColor(email);
                     pfpEl.textContent = email.charAt(0).toUpperCase();
-
                     nameEl.innerHTML = `${name.toUpperCase()} <span class="badge-free">Free</span>`;
                     emailEl.textContent = email;
                 } else {
@@ -738,16 +624,12 @@
                     nameEl.innerHTML = `Guest <span class="badge-free">Free</span>`;
                     emailEl.textContent = 'Not Logged In';
                 }
-            } catch (error) {
-                console.error('Failed to load user profile:', error);
-            }
+            } catch (error) { console.error('Failed to load user profile:', error); }
         }
         loadUserProfile();
 
-        // ==================== DYNAMICALLY LOAD MODELS ====================
         let selectedModelId = null;
         let availableModels = {};
-
         const modelTrigger = document.getElementById('modelTrigger');
         const triggerIcon = document.getElementById('triggerIcon');
         const triggerName = document.getElementById('triggerName');
@@ -762,21 +644,15 @@
                 const res = await fetch('/models');
                 const data = await res.json();
                 availableModels = data.models || {};
-                
                 const modelKeys = Object.keys(availableModels).filter(key => key !== 'auto');
-                
                 modelCountEl.textContent = `${modelKeys.length} models`;
-
                 if (modelKeys.length > 0) {
                     selectedModelId = modelKeys[0];
                     const first = availableModels[selectedModelId];
-                    triggerIcon.textContent = first.icon || '?';
-                    triggerIcon.style.background = first.color || '#7c3aed';
+                    triggerIcon.innerHTML = `<img src="${first.image || '/images/models/default.png'}" class="model-logo" style="width:100%;height:100%;object-fit:contain;">`;
                     triggerName.textContent = first.name || 'Unknown';
                 }
-            } catch (error) {
-                console.error('Failed to load models:', error);
-            }
+            } catch (error) { console.error('Failed to load models:', error); }
         }
 
         modelTrigger.addEventListener('click', () => {
@@ -791,16 +667,15 @@
 
         function renderModelList(filter) {
             modelListContainer.innerHTML = "";
-            
             const modelEntries = Object.entries(availableModels).filter(([key]) => key !== 'auto');
-            
             modelEntries.forEach(([key, model]) => {
                 if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
-                
                 const item = document.createElement('div');
                 item.className = `model-list-item${selectedModelId === key ? ' active' : ''}`;
                 item.innerHTML = `
-                    <div class="list-icon" style="background:${model.color || '#6b7280'};">${model.icon || '?'}</div>
+                    <div class="list-icon">
+                        <img src="${model.image || '/images/models/default.png'}" alt="${model.name} Logo" style="width:100%;height:100%;object-fit:contain;">
+                    </div>
                     <div class="list-info">
                         <div class="list-name">${model.name}</div>
                         <div class="list-desc">${model.provider}</div>
@@ -816,15 +691,13 @@
 
         function updateDetailPanel(id) {
             const m = availableModels[id]; if(!m) return;
-            document.getElementById('detailIcon').textContent = m.icon || '?';
-            document.getElementById('detailIcon').style.background = m.color || '#7c3aed';
+            document.getElementById('detailIcon').innerHTML = `<img src="${m.image || '/images/models/default.png'}" style="width:100%;height:100%;object-fit:contain;">`;
             document.getElementById('detailTitle').textContent = m.name;
             document.getElementById('detailDesc').textContent = m.description || 'No description available.';
             document.getElementById('detailProvider').textContent = m.provider || 'Unknown';
             document.getElementById('detailContext').textContent = m.context || 'N/A';
             document.getElementById('detailImages').textContent = m.images ? 'Supported' : 'Not supported';
             document.getElementById('detailPrice').textContent = m.cost_per_request || 'Unknown';
-            
             renderBars('detailSpeed', m.speed || 5, 'filled-green');
             renderBars('detailIntel', m.intelligence || 5, 'filled-yellow');
             renderBars('detailCost', m.cost || 5, 'filled-red');
@@ -839,58 +712,31 @@
 
         function selectModel(id) {
             selectedModelId = id; const m = availableModels[id];
-            triggerIcon.textContent = m.icon || '?';
-            triggerIcon.style.background = m.color || '#7c3aed';
+            triggerIcon.innerHTML = `<img src="${m.image || '/images/models/default.png'}" class="model-logo" style="width:100%;height:100%;object-fit:contain;">`;
             triggerName.textContent = m.name; 
             renderModelList("");
         }
 
-        // ==================== PAIRING STATUS ====================
         const statusText = document.getElementById('statusText');
         const statusDot = document.getElementById('statusDot');
-
         async function checkPairingStatus() {
             try {
                 const res = await fetch('/status');
-                if (res.ok) {
-                    statusText.textContent = 'Paired';
-                    statusDot.className = 'status-dot online';
-                }
-            } catch {
-                statusText.textContent = 'Not Paired';
-                statusDot.className = 'status-dot offline';
-            }
+                if (res.ok) { statusText.textContent = 'Paired'; statusDot.className = 'status-dot online'; }
+            } catch { statusText.textContent = 'Not Paired'; statusDot.className = 'status-dot offline'; }
         }
-        checkPairingStatus();
-        setInterval(checkPairingStatus, 5000);
+        checkPairingStatus(); setInterval(checkPairingStatus, 5000);
 
-        // ==================== HIDDEN FILE INPUT ====================
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.multiple = true;
-        fileInput.style.display = 'none';
-        document.body.appendChild(fileInput);
-
+        const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.multiple = true; fileInput.style.display = 'none'; document.body.appendChild(fileInput);
         const chatBox = document.getElementById('chatBox');
         const fileListContainer = document.getElementById('fileListContainer');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
         let uploadedFiles = []; 
 
-        chatBox.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            chatBox.classList.add("dragging");
-        });
-        chatBox.addEventListener("dragleave", () => {
-            chatBox.classList.remove("dragging");
-        });
-        chatBox.addEventListener("drop", (e) => {
-            e.preventDefault();
-            chatBox.classList.remove("dragging");
-            if (e.dataTransfer.files.length > 0) {
-                handleFiles(e.dataTransfer.files);
-            }
-        });
+        chatBox.addEventListener("dragover", (e) => { e.preventDefault(); chatBox.classList.add("dragging"); });
+        chatBox.addEventListener("dragleave", () => { chatBox.classList.remove("dragging"); });
+        chatBox.addEventListener("drop", (e) => { e.preventDefault(); chatBox.classList.remove("dragging"); if (e.dataTransfer.files.length > 0) { handleFiles(e.dataTransfer.files); } });
 
         function getFileIcon(file) {
             if (file.type.startsWith("image/")) return "🖼️";
@@ -898,113 +744,57 @@
             if (file.name.endsWith(".rbxm") || file.name.endsWith(".rbx")) return "📦";
             return "📄";
         }
-
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
-
         function simulateProgress(callback) {
             progressContainer.classList.add('active');
-            let progress = 0;
-            const interval = setInterval(() => {
+            let progress = 0; const interval = setInterval(() => {
                 progress += Math.random() * 15;
                 if (progress > 100) progress = 100;
                 progressBar.style.width = progress + '%';
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        progressContainer.classList.remove('active');
-                        progressBar.style.width = '0%';
-                        if (callback) callback();
-                    }, 200);
-                }
+                if (progress >= 100) { clearInterval(interval); setTimeout(() => { progressContainer.classList.remove('active'); progressBar.style.width = '0%'; if (callback) callback(); }, 200); }
             }, 100);
         }
-
         function handleFiles(fileList) {
-            const newFiles = Array.from(fileList);
-            let processedCount = 0;
-
-            simulateProgress(() => {
-                renderFilePreviews();
-            });
-
+            const newFiles = Array.from(fileList); let processedCount = 0;
+            simulateProgress(() => { renderFilePreviews(); });
             for (let file of newFiles) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     let previewData = null;
-                    if (file.type.startsWith("image/")) {
-                        previewData = event.target.result;
-                    }
-                    uploadedFiles.push({
-                        name: file.name,
-                        size: formatFileSize(file.size),
-                        type: file.type,
-                        previewData: previewData,
-                        textContent: file.type.startsWith("text/") || file.name.endsWith(".lua") ? event.target.result : "Binary"
-                    });
+                    if (file.type.startsWith("image/")) { previewData = event.target.result; }
+                    uploadedFiles.push({ name: file.name, size: formatFileSize(file.size), type: file.type, previewData: previewData, textContent: file.type.startsWith("text/") || file.name.endsWith(".lua") ? event.target.result : "Binary" });
                     processedCount++;
-                    if (processedCount === newFiles.length) {
-                        renderFilePreviews();
-                        setTimeout(() => {
-                            progressContainer.classList.remove('active');
-                            progressBar.style.width = '0%';
-                        }, 300);
-                    }
+                    if (processedCount === newFiles.length) { renderFilePreviews(); setTimeout(() => { progressContainer.classList.remove('active'); progressBar.style.width = '0%'; }, 300); }
                 };
-                if (file.type.startsWith("image/")) {
-                    reader.readAsDataURL(file);
-                } else {
-                    reader.readAsText(file);
-                }
+                if (file.type.startsWith("image/")) { reader.readAsDataURL(file); } else { reader.readAsText(file); }
             }
         }
-
         function renderFilePreviews() {
             fileListContainer.innerHTML = "";
-            if (uploadedFiles.length === 0) {
-                fileListContainer.classList.remove('visible');
-                return;
-            }
+            if (uploadedFiles.length === 0) { fileListContainer.classList.remove('visible'); return; }
             fileListContainer.classList.add('visible');
             uploadedFiles.forEach((fileData, index) => {
-                const card = document.createElement('div');
-                card.className = 'file-preview-card';
-                let previewHtml = fileData.previewData 
-                    ? `<img class="preview-img" src="${fileData.previewData}" alt="${fileData.name}">`
-                    : `<span style="font-size:32px;">${getFileIcon({name: fileData.name, type: fileData.type})}</span>`;
-                card.innerHTML = `
-                    <div class="file-preview-img-area">${previewHtml}</div>
-                    <div class="file-info-area">
-                        <div class="file-name">${fileData.name}</div>
-                        <div class="file-size">${fileData.size}</div>
-                    </div>
-                    <div class="file-remove-btn" data-index="${index}">✕</div>
-                `;
+                const card = document.createElement('div'); card.className = 'file-preview-card';
+                let previewHtml = fileData.previewData ? `<img class="preview-img" src="${fileData.previewData}" alt="${fileData.name}">` : `<span style="font-size:32px;">${getFileIcon({name: fileData.name, type: fileData.type})}</span>`;
+                card.innerHTML = `<div class="file-preview-img-area">${previewHtml}</div><div class="file-info-area"><div class="file-name">${fileData.name}</div><div class="file-size">${fileData.size}</div></div><div class="file-remove-btn" data-index="${index}">✕</div>`;
                 fileListContainer.appendChild(card);
             });
             document.querySelectorAll('.file-remove-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const index = parseInt(this.getAttribute('data-index'));
-                    uploadedFiles.splice(index, 1);
-                    renderFilePreviews();
-                });
+                btn.addEventListener('click', function(e) { e.stopPropagation(); const index = parseInt(this.getAttribute('data-index')); uploadedFiles.splice(index, 1); renderFilePreviews(); });
             });
         }
 
-        // ==================== DROPDOWN LOGIC ====================
         const plusBtn = document.getElementById('plusBtn');
         const dropdownPlus = document.getElementById('dropdownPlus');
         const dropdownServices = document.getElementById('dropdownServices');
         const servicesParent = document.getElementById('servicesParent');
         const addFilesItem = document.getElementById('addFilesItem');
         let selectedDestination = "ServerScriptService";
-
         const serviceOptions = [
             { id: "ServerScriptService", label: "ServerScriptService", icon: "⚙️" },
             { id: "ReplicatedStorage", label: "ReplicatedStorage", icon: "📦" },
@@ -1013,249 +803,96 @@
             { id: "Workspace", label: "Workspace", icon: "🌍" },
             { id: "ServerStorage", label: "ServerStorage", icon: "🗄️" }
         ];
-
         function renderDropdownServices() {
             dropdownServices.innerHTML = "";
             serviceOptions.forEach(opt => {
                 const item = document.createElement('div');
                 item.className = `dropdown-item${selectedDestination === opt.id ? ' active' : ''}`;
                 item.innerHTML = `<span class="icon">${opt.icon}</span> ${opt.label}`;
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectedDestination = opt.id;
-                    renderDropdownServices();
-                    closeDropdown(dropdownPlus);
-                    closeDropdown(dropdownServices);
-                });
+                item.addEventListener('click', (e) => { e.stopPropagation(); selectedDestination = opt.id; renderDropdownServices(); closeDropdown(dropdownPlus); closeDropdown(dropdownServices); });
                 dropdownServices.appendChild(item);
             });
         }
-
-        function toggleDropdown(e, menu) {
-            e.stopPropagation();
-            const isOpen = menu.classList.contains('open');
-            document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open'));
-            if (!isOpen) menu.classList.add('open');
-        }
-
-        function closeDropdown(menu) {
-            menu.classList.remove('open');
-        }
-
+        function toggleDropdown(e, menu) { e.stopPropagation(); const isOpen = menu.classList.contains('open'); document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open')); if (!isOpen) menu.classList.add('open'); }
+        function closeDropdown(menu) { menu.classList.remove('open'); }
         plusBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownPlus));
-        servicesParent.addEventListener('mouseenter', () => {
-            if (dropdownPlus.classList.contains('open')) dropdownServices.classList.add('open');
-        });
-        dropdownServices.addEventListener('mouseleave', () => {
-            dropdownServices.classList.remove('open');
-        });
-
-        addFilesItem.addEventListener('click', (e) => {
-            e.stopPropagation();
-            fileInput.click();
-            closeDropdown(dropdownPlus);
-            closeDropdown(dropdownServices);
-        });
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) handleFiles(e.target.files);
-            e.target.value = '';
-        });
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open'));
-        });
+        servicesParent.addEventListener('mouseenter', () => { if (dropdownPlus.classList.contains('open')) dropdownServices.classList.add('open'); });
+        dropdownServices.addEventListener('mouseleave', () => { dropdownServices.classList.remove('open'); });
+        addFilesItem.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); closeDropdown(dropdownPlus); closeDropdown(dropdownServices); });
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFiles(e.target.files); e.target.value = ''; });
+        document.addEventListener('click', () => { document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open')); });
         renderDropdownServices();
 
-        // ==================== GENERATE DROPDOWN ====================
         const generateBtn = document.getElementById('generateBtn');
         const dropdownGenerate = document.getElementById('dropdownGenerate');
         const generateIcon = document.getElementById('generateIcon');
         const generateLabel = document.getElementById('generateLabel');
         let selectedMode = "Generate";
-
-        const modeOptions = [
-            { id: "Generate", label: "Generate", icon: "∞" },
-            { id: "Ask", label: "Ask", icon: "❓" },
-            { id: "Plan", label: "Plan", icon: "📝" }
-        ];
-
+        const modeOptions = [ { id: "Generate", label: "Generate", icon: "∞" }, { id: "Ask", label: "Ask", icon: "❓" }, { id: "Plan", label: "Plan", icon: "📝" } ];
         function renderDropdownGenerate() {
             dropdownGenerate.innerHTML = "";
             modeOptions.forEach(opt => {
                 const item = document.createElement('div');
                 item.className = `dropdown-item${selectedMode === opt.id ? ' active' : ''}`;
                 item.innerHTML = `<span class="icon-sm">${opt.icon}</span> ${opt.label}`;
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectedMode = opt.id;
-                    generateIcon.textContent = opt.icon;
-                    generateLabel.textContent = opt.label;
-                    renderDropdownGenerate();
-                    closeDropdown(dropdownGenerate);
-                });
+                item.addEventListener('click', (e) => { e.stopPropagation(); selectedMode = opt.id; generateIcon.textContent = opt.icon; generateLabel.textContent = opt.label; renderDropdownGenerate(); closeDropdown(dropdownGenerate); });
                 dropdownGenerate.appendChild(item);
             });
         }
-        generateBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate));
-        renderDropdownGenerate();
+        generateBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate)); renderDropdownGenerate();
 
-        // ==================== GENERATION ====================
         const promptInput = document.getElementById('promptInput');
         const messagesDiv = document.getElementById('messages');
         const heroArea = document.getElementById('heroArea');
-
         promptInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
-
-        function addMessage(text, type) {
-            messagesDiv.style.display = 'flex';
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `msg ${type}`;
-            msgDiv.innerHTML = `<div>${text}</div>`;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function addCodeBlock(code, type) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `msg ${type}`;
-            msgDiv.innerHTML = `<pre class="code-block">${escapeHtml(code)}</pre>`;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
+        function addMessage(text, type) { messagesDiv.style.display = 'flex'; const msgDiv = document.createElement('div'); msgDiv.className = `msg ${type}`; msgDiv.innerHTML = `<div>${text}</div>`; messagesDiv.appendChild(msgDiv); messagesDiv.scrollTop = messagesDiv.scrollHeight; }
+        function addCodeBlock(code, type) { const msgDiv = document.createElement('div'); msgDiv.className = `msg ${type}`; msgDiv.innerHTML = `<pre class="code-block">${escapeHtml(code)}</pre>`; messagesDiv.appendChild(msgDiv); messagesDiv.scrollTop = messagesDiv.scrollHeight; }
         async function triggerGeneration() {
-            const prompt = promptInput.value.trim(); 
-            if (!prompt) return;
-
-            addMessage(prompt, 'user');
-            promptInput.value = ''; promptInput.style.height = 'auto';
-
-            let finalFileStrings = [];
-            const MAX_SAFE_SIZE = 50 * 1024;
-
+            const prompt = promptInput.value.trim(); if (!prompt) return;
+            addMessage(prompt, 'user'); promptInput.value = ''; promptInput.style.height = 'auto';
+            let finalFileStrings = []; const MAX_SAFE_SIZE = 50 * 1024;
             for (let i = 0; i < uploadedFiles.length; i++) {
-                const fileData = uploadedFiles[i];
-                let content = fileData.textContent;
-                if (fileData.type.startsWith("image/")) {
-                    content = `[Image uploaded: ${fileData.name} (${fileData.size})]`;
-                } else if (fileData.rawBytes && fileData.rawBytes > MAX_SAFE_SIZE) {
-                    content = content.substring(0, MAX_SAFE_SIZE) + "\n\n... [TRUNCATED TO 50KB]";
-                    addMessage(`⚠️ File "${fileData.name}" was too large. Truncated to 50KB.`, 'ai');
-                }
+                const fileData = uploadedFiles[i]; let content = fileData.textContent;
+                if (fileData.type.startsWith("image/")) { content = `[Image uploaded: ${fileData.name} (${fileData.size})]`; }
+                else if (fileData.rawBytes && fileData.rawBytes > MAX_SAFE_SIZE) { content = content.substring(0, MAX_SAFE_SIZE) + "\n\n... [TRUNCATED TO 50KB]"; addMessage(`⚠️ File "${fileData.name}" was too large. Truncated to 50KB.`, 'ai'); }
                 finalFileStrings.push(`--- File: ${fileData.name} ---\n${content}`);
             }
-
             const combinedFileContent = finalFileStrings.join('\n\n');
             const payload = { prompt, destination: selectedDestination, model_id: selectedModelId };
             if (combinedFileContent) payload.fileContent = combinedFileContent;
-
             try {
-                const response = await fetch('/generate', { 
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) 
-                });
+                const response = await fetch('/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await response.json();
-                if (response.ok) {
-                    addMessage(`✅ Generated via ${data.model_used}`, 'ai');
-                    addCodeBlock(data.code, 'ai');
-                    addMessage(`📦 Script queued for Roblox!`, 'ai');
-                } else {
-                    addMessage(`❌ Error: ${data.detail || 'Unknown error'}`, 'ai');
-                }
-            } catch (error) {
-                addMessage(`❌ Connection Error: ${error.message}`, 'ai');
-            }
+                if (response.ok) { addMessage(`✅ Generated via ${data.model_used}`, 'ai'); addCodeBlock(data.code, 'ai'); addMessage(`📦 Script queued for Roblox!`, 'ai'); }
+                else { addMessage(`❌ Error: ${data.detail || 'Unknown error'}`, 'ai'); }
+            } catch (error) { addMessage(`❌ Connection Error: ${error.message}`, 'ai'); }
         }
-
         function escapeHtml(text) { return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+        generateBtn.addEventListener('click', async (e) => { if (dropdownGenerate.classList.contains('open')) return; await triggerGeneration(); });
+        promptInput.addEventListener('keydown', async (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); await triggerGeneration(); } });
 
-        generateBtn.addEventListener('click', async (e) => {
-            if (dropdownGenerate.classList.contains('open')) return;
-            await triggerGeneration();
-        });
-
-        promptInput.addEventListener('keydown', async (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                await triggerGeneration();
-            }
-        });
-
-        // ==================== VOICE TO TEXT (MICROPHONE) ====================
         const micBtn = document.getElementById("micBtn");
-
-        const SpeechRecognition =
-            window.SpeechRecognition || window.webkitSpeechRecognition;
-
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             const recognition = new SpeechRecognition();
-
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = "en-US";
-
+            recognition.continuous = true; recognition.interimResults = true; recognition.lang = "en-US";
             let listening = false;
-
             micBtn.addEventListener("click", () => {
-                if (!listening) {
-                    navigator.mediaDevices.getUserMedia({ audio: true })
-                        .then(() => {
-                            recognition.start();
-                        })
-                        .catch(() => {
-                            alert("Microphone permission denied.");
-                        });
-                } else {
-                    recognition.stop();
-                }
+                if (!listening) { navigator.mediaDevices.getUserMedia({ audio: true }).then(() => { recognition.start(); }).catch(() => { alert("Microphone permission denied."); }); }
+                else { recognition.stop(); }
             });
-
-            recognition.onstart = () => {
-                listening = true;
-                micBtn.textContent = "🔴";
-                micBtn.title = "Stop Listening";
-                micBtn.style.color = "#ef4444";
-            };
-
-            recognition.onend = () => {
-                listening = false;
-                micBtn.textContent = "🎤";
-                micBtn.title = "Start Voice Input";
-                micBtn.style.color = "#a1a1aa";
-            };
-
+            recognition.onstart = () => { listening = true; micBtn.textContent = "🔴"; micBtn.title = "Stop Listening"; micBtn.style.color = "#ef4444"; };
+            recognition.onend = () => { listening = false; micBtn.textContent = "🎤"; micBtn.title = "Start Voice Input"; micBtn.style.color = "#a1a1aa"; };
             recognition.onresult = (event) => {
                 let transcript = "";
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
-                }
-
-                promptInput.value = transcript;
-                promptInput.dispatchEvent(new Event("input"));
-
-                // Auto-send after 1.2 seconds of silence
+                for (let i = event.resultIndex; i < event.results.length; i++) { transcript += event.results[i][0].transcript; }
+                promptInput.value = transcript; promptInput.dispatchEvent(new Event("input"));
                 clearTimeout(window.voiceTimer);
-                window.voiceTimer = setTimeout(() => {
-                    if (transcript.trim().length > 0) {
-                        triggerGeneration();
-                    }
-                }, 1200);
+                window.voiceTimer = setTimeout(() => { if (transcript.trim().length > 0) { triggerGeneration(); } }, 1200);
             };
+            recognition.onerror = (e) => { console.log(e.error); if (e.error === "not-allowed") { micBtn.textContent = "🎤"; micBtn.title = "Mic Denied"; listening = false; } };
+        } else { micBtn.disabled = true; micBtn.title = "Speech Recognition isn't supported in this browser."; micBtn.style.opacity = "0.4"; }
 
-            recognition.onerror = (e) => {
-                console.log(e.error);
-                if (e.error === "not-allowed") {
-                    micBtn.textContent = "🎤";
-                    micBtn.title = "Mic Denied";
-                    listening = false;
-                }
-            };
-        } else {
-            micBtn.disabled = true;
-            micBtn.title = "Speech Recognition isn't supported in this browser.";
-            micBtn.style.opacity = "0.4";
-        }
-
-        // ==================== INIT ====================
         loadModels();
     </script>
 </body>
