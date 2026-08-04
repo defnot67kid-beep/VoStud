@@ -1,6 +1,5 @@
 """
-Roblox AI Coder - Final Production Server (Real Google PFP)
-Handles Real Google & Roblox Login, Sessions, and AI Generation
+Roblox AI Coder - Final Production Server (Fixed PFP + Account Select)
 """
 
 import os
@@ -103,7 +102,7 @@ async def get_session(request: Request):
             "logged_in": True,
             "name": user.get('name', 'User'),
             "email": user.get('email', 'No Email'),
-            "picture": user.get('picture', None), # Pass the picture URL
+            "picture": user.get('picture', None),
             "provider": user.get('provider', 'unknown')
         }
     return {"logged_in": False}
@@ -120,7 +119,8 @@ async def login_google(request: Request):
         f"client_id={GOOGLE_CLIENT_ID}&"
         f"redirect_uri={redirect_uri}&"
         "response_type=code&"
-        "scope=openid%20email%20profile" # Added 'profile' scope for PFP
+        "scope=openid%20email%20profile&"
+        "prompt=select_account" # <--- THIS FORCES GOOGLE TO SHOW THE ACCOUNT PICKER
     )
     return RedirectResponse(url=auth_url)
 
@@ -151,11 +151,13 @@ async def google_callback(request: Request):
         user_resp = requests.get("https://www.googleapis.com/oauth2/v1/userinfo", headers=headers)
         if user_resp.status_code == 200:
             user_info = user_resp.json()
+            
+            # Store user data. Google sends 'picture'. We'll send it to the frontend.
             request.session['user'] = {
                 'id': user_info['id'],
                 'name': user_info['name'],
                 'email': user_info['email'],
-                'picture': user_info.get('picture'), # Google sends the PFP here
+                'picture': user_info.get('picture'), # This might be null if Google blocks it.
                 'provider': 'google'
             }
             logger.info(f"User logged in via Google: {user_info['email']}")
@@ -214,7 +216,7 @@ async def roblox_callback(request: Request):
                 'id': user_info['sub'],
                 'name': user_info['name'],
                 'email': user_info.get('email', 'No Email Provided'),
-                'picture': None, # Roblox doesn't provide PFP via standard OAuth easily
+                'picture': None,
                 'provider': 'roblox'
             }
             logger.info(f"User logged in via Roblox: {user_info['name']}")
@@ -231,7 +233,7 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== AI MODELS ====================
+# ==================== AI MODELS (Unchanged) ====================
 MODELS = {
     "auto": {
         "name": "Auto",
@@ -463,7 +465,7 @@ async def get_queue_size():
 # ==================== RUN ====================
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v3.0 - Real Google PFP")
+    logger.info("🚀 Roblox AI Coder v3.0 - Fixed PFP & Account Select")
     logger.info(f"📊 Loaded {len(MODELS)} models with real stats")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
