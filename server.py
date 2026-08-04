@@ -1,6 +1,6 @@
 """
-Roblox AI Coder - Full OAuth Server
-Handles Real Google & Roblox Login
+Roblox AI Coder - Final Fix (No httpx dependency)
+Handles Google & Roblox Login via manual OAuth URLs
 """
 
 import os
@@ -12,12 +12,11 @@ import requests
 import uvicorn
 from collections import deque
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Request, Response
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from authlib.integrations.starlette_client import OAuth
 from starlette.middleware.sessions import SessionMiddleware
 
 load_dotenv()
@@ -47,42 +46,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add Session Middleware to handle cookies/logins
 if SESSION_SECRET:
     app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
-
-# ==================== OAUTH SETUP ====================
-oauth = OAuth()
-
-# Google OAuth Config
-if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
-    oauth.register(
-        name='google',
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={
-            'scope': 'openid email profile'
-        }
-    )
-else:
-    logger.warning("⚠️ Google OAuth credentials missing. Google login will be disabled.")
-
-# Roblox OAuth Config
-if ROBLOX_CLIENT_ID and ROBLOX_CLIENT_SECRET:
-    oauth.register(
-        name='roblox',
-        client_id=ROBLOX_CLIENT_ID,
-        client_secret=ROBLOX_CLIENT_SECRET,
-        authorize_url='https://apis.roblox.com/oauth/v1/authorize',
-        access_token_url='https://apis.roblox.com/oauth/v1/token',
-        client_kwargs={
-            'scope': 'openid profile',
-            'token_endpoint_auth_method': 'client_secret_post'
-        }
-    )
-else:
-    logger.warning("⚠️ Roblox OAuth credentials missing. Roblox login will be disabled.")
 
 # ==================== SERVE STATIC FILES ====================
 app.mount("/static", StaticFiles(directory="web"), name="static")
@@ -103,7 +68,6 @@ async def serve_home():
 
 @app.get("/signup", response_class=HTMLResponse)
 async def serve_signup(request: Request):
-    # If user is already logged in, send them to dashboard
     user = request.session.get('user')
     if user:
         return RedirectResponse(url="/dashboard")
@@ -124,36 +88,78 @@ async def serve_dashboard(request: Request):
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Dashboard page not found.</h1>")
 
-# ==================== OAUTH AUTH ROUTES ====================
+# ==================== MANUAL OAUTH REDIRECTS ====================
 
 @app.get('/auth/google')
 async def login_google(request: Request):
     if not GOOGLE_CLIENT_ID:
-        return HTMLResponse(content="<h1>Google Login is not configured.</h1>")
-    redirect_uri = request.url_for('auth_callback').include_query_params(provider='google')
-    return await oauth.google.authorize_redirect(request, str(redirect_uri))
+        return HTMLResponse(content="<h1>Google Login not configured.</h1>")
+    
+    # Build the Google OAuth URL manually
+    redirect_uri = str(request.base_url) + "auth/callback?provider=google"
+    auth_url = (
+        "https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={GOOGLE_CLIENT_ID}&"
+        f"redirect_uri={redirect_uri}&"
+        "response_type=code&"
+        "scope=openid%20email%20profile"
+    )
+    return RedirectResponse(url=auth_url)
 
 @app.get('/auth/roblox')
 async def login_roblox(request: Request):
     if not ROBLOX_CLIENT_ID:
-        return HTMLResponse(content="<h1>Roblox Login is not configured.</h1>")
-    redirect_uri = request.url_for('auth_callback').include_query_params(provider='roblox')
-    return await oauth.roblox.authorize_redirect(request, str(redirect_uri))
+        return HTMLResponse(content="<h1>Roblox Login not configured.</h1>")
+    
+    # Build the Roblox OAuth URL manually
+    redirect_uri = str(request.base_url) + "auth/callback?provider=roblox"
+    auth_url = (
+        "https://apis.roblox.com/oauth/v1/authorize?"
+        f"client_id={ROBLOX_CLIENT_ID}&"
+        f"redirect_uri={redirect_uri}&"
+        "response_type=code&"
+        "scope=openid%20profile"
+    )
+    return RedirectResponse(url=auth_url)
 
 @app.get('/auth/callback')
 async def auth_callback(request: Request, provider: str = None):
     if not provider:
         return HTMLResponse(content="<h1>Error: Missing provider</h1>")
 
+    code = request.query_params.get('code')
+    if not code:
+        return HTMLResponse(content="<h1>Error: Missing authorization code</h1>")
+
     try:
         if provider == 'google':
-            if not GOOGLE_CLIENT_ID:
-                return HTMLResponse(content="<h1>Google Login is not configured.</h1>")
-            token = await oauth.google.authorize_access_token(request)
-            user_info = token.get('userinfo')
-            if user_info:
+            if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+                return HTMLResponse(content="<h1>Google not configured.</h1>")
+            
+            # Exchange code for token
+            token_url = "https://oauth2.googleapis.com/token"
+            redirect_uri = str(request.base_url) + "auth/callback?provider=google"
+            payload = {
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri
+            }
+            resp = requests.post(token_url, data=payload)
+            if resp.status_code != 200:
+                return HTMLResponse(content="<h1>Failed to get Google token.</h1>")
+            
+            token_data = resp.json()
+            access_token = token_data.get("access_token")
+            
+            # Get user info
+            headers = {"Authorization": f"Bearer {access_token}"}
+            user_resp = requests.get("https://www.googleapis.com/oauth2/v1/userinfo", headers=headers)
+            if user_resp.status_code == 200:
+                user_info = user_resp.json()
                 request.session['user'] = {
-                    'id': user_info['sub'],
+                    'id': user_info['id'],
                     'name': user_info['name'],
                     'email': user_info['email'],
                     'provider': 'google'
@@ -162,13 +168,31 @@ async def auth_callback(request: Request, provider: str = None):
                 return RedirectResponse(url="/dashboard")
 
         elif provider == 'roblox':
-            if not ROBLOX_CLIENT_ID:
-                return HTMLResponse(content="<h1>Roblox Login is not configured.</h1>")
-            token = await oauth.roblox.authorize_access_token(request)
-            headers = {'Authorization': f'Bearer {token["access_token"]}'}
-            resp = requests.get('https://apis.roblox.com/oauth/v1/userinfo', headers=headers)
-            if resp.status_code == 200:
-                user_info = resp.json()
+            if not ROBLOX_CLIENT_ID or not ROBLOX_CLIENT_SECRET:
+                return HTMLResponse(content="<h1>Roblox not configured.</h1>")
+            
+            # Exchange code for token
+            token_url = "https://apis.roblox.com/oauth/v1/token"
+            redirect_uri = str(request.base_url) + "auth/callback?provider=roblox"
+            payload = {
+                "client_id": ROBLOX_CLIENT_ID,
+                "client_secret": ROBLOX_CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri
+            }
+            resp = requests.post(token_url, data=payload)
+            if resp.status_code != 200:
+                return HTMLResponse(content="<h1>Failed to get Roblox token.</h1>")
+            
+            token_data = resp.json()
+            access_token = token_data.get("access_token")
+            
+            # Get user info
+            headers = {"Authorization": f"Bearer {access_token}"}
+            user_resp = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers=headers)
+            if user_resp.status_code == 200:
+                user_info = user_resp.json()
                 request.session['user'] = {
                     'id': user_info['sub'],
                     'name': user_info['name'],
@@ -190,8 +214,6 @@ async def logout(request: Request):
     return RedirectResponse(url="/home")
 
 # ==================== YOUR API ENDPOINTS ====================
-# (These are your existing endpoints, kept unchanged)
-
 MODELS = {
     "groq-llama": {
         "name": "Llama 3.3 70B",
@@ -340,7 +362,7 @@ async def get_queue_size():
 # ==================== RUN ====================
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v3.0 - OAuth Enabled")
+    logger.info("🚀 Roblox AI Coder v3.0 - Manual OAuth")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
