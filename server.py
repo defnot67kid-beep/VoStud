@@ -1,6 +1,6 @@
 """
 Roblox AI Coder - Modular Server
-Supports Single Scripts & Multi-File Projects
+Supports Home Page (RoStudio style) & Dashboard
 """
 
 import os
@@ -78,17 +78,27 @@ app.add_middleware(
 )
 
 # ==================== SERVE STATIC FILES ====================
-# This mounts your 'web' folder so the browser can access /static/style.css etc.
 app.mount("/static", StaticFiles(directory="web"), name="static")
 
+# HOME PAGE (ROOT)
 @app.get("/", response_class=HTMLResponse)
-async def serve_web_ui():
+async def serve_home():
     html_path = os.path.join("web", "index.html")
     try:
         with open(html_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
-        return HTMLResponse(content="<h1>Index.html not found. Make sure 'web/index.html' exists.</h1>")
+        return HTMLResponse(content="<h1>Home page not found.</h1>")
+
+# DASHBOARD PAGE
+@app.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard():
+    html_path = os.path.join("web", "dashboard.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Dashboard page not found.</h1>")
 
 # ==================== HELPERS ====================
 def clean_code(code: str) -> str:
