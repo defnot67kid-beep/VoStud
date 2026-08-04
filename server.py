@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Full Server (Deduped Models, Auto-Healing)
+Roblox AI Coder - Full Server (Deduped Models, Auto-Healing, Filename Match)
 """
 
 import os
@@ -88,10 +88,10 @@ def is_model_locked(model_id):
         return False
     return True
 
-# ==================== MODELS (WITH DETAILS) ====================
+# ==================== MODELS (WITH DETAILS & EXACT FILENAMES) ====================
 MODELS = {
-    "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/llama.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
-    "groq-mixtral": {"name": "Mixtral 8x7B", "provider": "Groq / Mistral", "api": "groq", "id": "mixtral-8x7b-32768", "image": "/images/models/mistral.png", "context": "32K tokens", "speed": 8, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Excellent legacy model."},
+    "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
+    "groq-mixtral": {"name": "Mixtral 8x7B", "provider": "Groq / Mistral", "api": "groq", "id": "mixtral-8x7b-32768", "image": "/images/models/grok.png", "context": "32K tokens", "speed": 8, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Excellent legacy model."},
     "deepseek-v3": {"name": "DeepSeek V3", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-chat", "image": "/images/models/deepseek.png", "context": "64K tokens", "speed": 9, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Open-source powerhouse."},
     "deepseek-r1": {"name": "DeepSeek R1", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-r1", "image": "/images/models/deepseek.png", "context": "128K tokens", "speed": 7, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Reasoning powerhouse for complex logic."},
     "gemini-2.0-flash": {"name": "Gemini 2.0 Flash", "provider": "Google", "api": "openrouter", "id": "google/gemini-2.0-flash-exp", "image": "/images/models/google.png", "context": "1M tokens", "speed": 10, "intelligence": 7, "cost": 1, "images": True, "cost_per_request": "Free", "description": "Sub-second latency."},
@@ -104,7 +104,7 @@ MODELS = {
     "claude-3.5-sonnet": {"name": "Claude 3.5 Sonnet", "provider": "Anthropic", "api": "openrouter", "id": "anthropic/claude-3.5-sonnet", "image": "/images/models/anthropic.png", "context": "200K tokens", "speed": 7, "intelligence": 10, "cost": 6, "images": True, "cost_per_request": "$0.03", "description": "Incredible formatting."},
     "claude-3.7-sonnet": {"name": "Claude 3.7 Sonnet", "provider": "Anthropic", "api": "openrouter", "id": "anthropic/claude-3.7-sonnet", "image": "/images/models/anthropic.png", "context": "200K tokens", "speed": 8, "intelligence": 10, "cost": 6, "images": True, "cost_per_request": "$0.03", "description": "Latest Anthropic model with reasoning."},
     "nous-hermes": {"name": "Nous Hermes 2 Pro", "provider": "Nous Research", "api": "openrouter", "id": "nousresearch/hermes-2-pro-mistral-7b", "image": "/images/models/default.png", "context": "32K tokens", "speed": 7, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Great for general bot logic."},
-    "llama-3.1-8b": {"name": "Llama 3.1 8B", "provider": "Meta", "api": "openrouter", "id": "meta-llama/llama-3.1-8b-instruct", "image": "/images/models/llama.png", "context": "128K tokens", "speed": 10, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-lightweight and fast."},
+    "llama-3.1-8b": {"name": "Llama 3.1 8B", "provider": "Meta", "api": "openrouter", "id": "meta-llama/llama-3.1-8b-instruct", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-lightweight and fast."},
 }
 
 # ==================== PLUGIN DATA ENDPOINTS ====================
