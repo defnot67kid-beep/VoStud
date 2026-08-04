@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Full Server (One-Code Pairing System)
+Roblox AI Coder - Full Server (One-Code Pairing System with Roblox Username)
 """
 
 import os
@@ -181,22 +181,35 @@ async def consume_code(request: Request):
     user_code_map.pop(code_data["user_id"], None)
     return {"success": True, "message": "Code consumed successfully"}
 
+@app.post("/api/dashboard-pair-success")
+async def dashboard_pair_success(request: Request):
+    data = await request.json()
+    pairing_id = data.get("pairing_id")
+    if pairing_id:
+        logger.info(f"Received pairing success signal for ID: {pairing_id}")
+        return {"success": True}
+    return {"success": False}
+
 # ==================== PAGE ROUTES ====================
 @app.get("/", response_class=RedirectResponse)
 async def root(): return RedirectResponse(url="/home")
+
 @app.get("/home", response_class=HTMLResponse)
 async def serve_home():
     with open(os.path.join("web", "home.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
 @app.get("/signup", response_class=HTMLResponse)
 async def serve_signup(request: Request):
     if request.session.get('user'): return RedirectResponse(url="/dashboard")
     with open(os.path.join("web", "signup.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard(request: Request):
     with open(os.path.join("web", "dashboard.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
 @app.get("/session")
 async def get_session(request: Request):
     user = request.session.get('user')
@@ -217,6 +230,13 @@ async def get_status(request: Request):
 # ==================== OAUTH & AI ====================
 MODELS = {
     "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
+    "groq-mixtral": {"name": "Mixtral 8x7B", "provider": "Groq / Mistral", "api": "groq", "id": "mixtral-8x7b-32768", "image": "/images/models/mistral.png", "context": "32K tokens", "speed": 8, "intelligence": 7, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Excellent legacy model."},
+    "deepseek-v3": {"name": "DeepSeek V3", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-chat", "image": "/images/models/deepseek.png", "context": "64K tokens", "speed": 9, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Open-source powerhouse."},
+    "gemini-2.0-flash": {"name": "Gemini 2.0 Flash", "provider": "Google", "api": "openrouter", "id": "google/gemini-2.0-flash-exp", "image": "/images/models/google.png", "context": "1M tokens", "speed": 10, "intelligence": 7, "cost": 1, "images": True, "cost_per_request": "Free", "description": "Sub-second latency."},
+    "qwen-2.5-coder": {"name": "Qwen 2.5 Coder 7B", "provider": "Alibaba", "api": "openrouter", "id": "qwen/qwen-2.5-coder-7b-instruct", "image": "/images/models/alibaba.png", "context": "32K tokens", "speed": 8, "intelligence": 6, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Tiny and lightning fast."},
+    "mistral-7b-instruct": {"name": "Mistral 7B", "provider": "Mistral", "api": "openrouter", "id": "mistralai/mistral-7b-instruct", "image": "/images/models/mistral.png", "context": "8K tokens", "speed": 7, "intelligence": 5, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Lightweight and fast."},
+    "gpt-4o": {"name": "GPT-4o", "provider": "OpenAI", "api": "openrouter", "id": "openai/gpt-4o", "image": "/images/models/openai.png", "context": "128K tokens", "speed": 8, "intelligence": 10, "cost": 8, "images": True, "cost_per_request": "$0.03 - $0.10", "description": "The gold standard for coding."},
+    "claude-3.5-sonnet": {"name": "Claude 3.5 Sonnet", "provider": "Anthropic", "api": "openrouter", "id": "anthropic/claude-3.5-sonnet", "image": "/images/models/anthropic.png", "context": "200K tokens", "speed": 7, "intelligence": 10, "cost": 6, "images": True, "cost_per_request": "$0.03 - $0.08", "description": "Incredible formatting."},
 }
 
 code_queue = deque()
@@ -246,13 +266,25 @@ def generate_with_groq(model_id, prompt):
     if response.status_code != 200: raise Exception(f"Groq Error: {response.text}")
     return clean_code(response.json()["choices"][0]["message"]["content"])
 
+def generate_with_openrouter(model_id, prompt):
+    if not OPENROUTER_API_KEY: raise Exception("OPENROUTER_API_KEY missing.")
+    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
+    payload = {"model": model_id, "messages": [{"role": "system", "content": "You are a Roblox Lua expert. Output ONLY Lua code."}, {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 3000}
+    response = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=60)
+    if response.status_code != 200: raise Exception(f"OpenRouter Error: {response.text}")
+    return clean_code(response.json()["choices"][0]["message"]["content"])
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_code(request: GenerateRequest):
     if not request.prompt: raise HTTPException(status_code=400, detail="No prompt provided")
     model_config = MODELS.get(request.model_id)
     if not model_config: raise HTTPException(status_code=400, detail="Invalid model ID")
     try:
-        code = generate_with_groq(model_config["id"], request.prompt)
+        if model_config["api"] == "groq":
+            code = generate_with_groq(model_config["id"], request.prompt)
+        else:
+            code = generate_with_openrouter(model_config["id"], request.prompt)
+        
         code_id = str(uuid.uuid4())
         code_queue.append({"id": code_id, "code": code, "scriptName": request.prompt[:30].replace(" ", "_"), "destination": request.destination, "timestamp": time.time()})
         if len(code_queue) > MAX_QUEUE_SIZE: code_queue.popleft()
@@ -277,6 +309,7 @@ async def acknowledge_code(request: dict):
             return {"success": True}
     return {"success": False}
 
+# ==================== OAUTH ROUTES ====================
 @app.get('/auth/google')
 async def login_google(request: Request):
     redirect_uri = str(request.base_url) + "auth/google/callback"
@@ -297,10 +330,34 @@ async def google_callback(request: Request):
     request.session['user'] = {'id': user_info['id'], 'name': user_info['name'], 'email': user_info['email'], 'picture': user_info.get('picture'), 'provider': 'google'}
     return RedirectResponse(url="/dashboard")
 
+@app.get('/auth/roblox')
+async def login_roblox(request: Request):
+    redirect_uri = str(request.base_url) + "auth/roblox/callback"
+    auth_url = f"https://apis.roblox.com/oauth/v1/authorize?client_id={ROBLOX_CLIENT_ID}&redirect_uri={redirect_uri}&response_type=code&scope=openid%20profile"
+    return RedirectResponse(url=auth_url)
+
+@app.get('/auth/roblox/callback')
+async def roblox_callback(request: Request):
+    code = request.query_params.get('code')
+    token_url = "https://apis.roblox.com/oauth/v1/token"
+    redirect_uri = str(request.base_url) + "auth/roblox/callback"
+    payload = {"client_id": ROBLOX_CLIENT_ID, "client_secret": ROBLOX_CLIENT_SECRET, "code": code, "grant_type": "authorization_code", "redirect_uri": redirect_uri}
+    resp = requests.post(token_url, data=payload)
+    token_data = resp.json()
+    headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+    user_resp = requests.get("https://apis.roblox.com/oauth/v1/userinfo", headers=headers)
+    user_info = user_resp.json()
+    request.session['user'] = {'id': user_info['sub'], 'name': user_info['name'], 'email': user_info.get('email', 'No Email Provided'), 'picture': None, 'provider': 'roblox'}
+    return RedirectResponse(url="/dashboard")
+
 @app.get('/auth/logout')
 async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
 if __name__ == "__main__":
+    logger.info("=" * 50)
+    logger.info("🚀 Roblox AI Coder v4.1.0 - Full Server")
+    logger.info("🌐 Server running on port 8000")
+    logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
