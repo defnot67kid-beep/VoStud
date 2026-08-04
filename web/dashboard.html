@@ -118,9 +118,10 @@
         }
         .action-card.upgrade:hover { border-color: rgba(139, 92, 246, 0.5); }
 
+        /* ==================== USER PROFILE (COPYCAT STYLE) ==================== */
         .user-profile {
             margin-top: 12px;
-            padding: 12px 14px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -132,28 +133,69 @@
         .user-profile:hover { background: #1a1a1a; }
         
         .user-info { display: flex; align-items: center; gap: 12px; }
-        .pfp {
+        
+        .pfp-container {
             width: 32px; height: 32px;
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 600; font-size: 14px; color: #fff;
+            overflow: hidden;
             flex-shrink: 0;
+            background: #1f1f1f;
+            display: flex; align-items: center; justify-content: center;
         }
+        .pfp-container img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
         .user-details { display: flex; flex-direction: column; }
-        .user-name { font-size: 13px; font-weight: 600; color: #fff; }
-        .user-email { font-size: 11px; color: #6b7280; }
-        .badge-free {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid #27272a;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #9ca3af;
-            margin-left: 6px;
+        .user-name { 
+            font-size: 13px; 
+            font-weight: 700;
+            color: #fff; 
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        .settings-icon { color: #6b7280; transition: 0.2s; }
-        .user-profile:hover .settings-icon { color: #fff; }
+        .user-email { font-size: 11px; color: #6b7280; margin-top: 1px; }
+        
+        .badge-free {
+            background: #27272a;
+            border: none;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 100px;
+            color: #9ca3af;
+            font-weight: 500;
+        }
 
+        /* ==================== SETTINGS ICON (LOCAL PNG) ==================== */
+        .settings-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .settings-icon-img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+        .settings-btn:hover .settings-icon-img {
+            opacity: 1;
+        }
+
+        /* ==================== MAIN CONTENT ==================== */
         .main-content {
             flex: 1;
             display: flex;
@@ -509,15 +551,27 @@
         <div class="sidebar-actions">
             <div class="action-card"><div class="content"><h4>Join Discord</h4><p>Perks, updates &amp; support</p></div><div class="arrow">→</div></div>
             <div class="action-card upgrade"><div class="content"><h4>Upgrade to Pro</h4><p>Unlock more features</p></div><div class="arrow">→</div></div>
+            
+            <!-- ==================== USER PROFILE ==================== -->
             <div class="user-profile" id="userProfile">
                 <div class="user-info">
-                    <div class="pfp" id="userPfp" style="background:#6b7280;">?</div>
+                    <!-- PFP Container - Will show real image -->
+                    <div class="pfp-container" id="userPfpContainer">
+                        <img id="userPfp" src="https://ui-avatars.com/api/?name=G&background=6b7280&color=fff" alt="Avatar">
+                    </div>
                     <div class="user-details">
-                        <div class="user-name" id="userDisplayName">Loading... <span class="badge-free">Free</span></div>
+                        <div class="user-name" id="userDisplayName">
+                            Loading...
+                            <span class="badge-free">Free</span>
+                        </div>
                         <div class="user-email" id="userEmail">Loading...</div>
                     </div>
                 </div>
-                <div class="settings-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+                
+                <!-- SETTINGS ICON USING YOUR LOCAL IMAGE -->
+                <button class="settings-btn" id="settingsBtn">
+                    <img src="/static/Images/Icons/settings.png" alt="Settings" class="settings-icon-img">
+                </button>
             </div>
         </div>
     </div>
@@ -603,31 +657,47 @@
     </div>
 
     <script>
+        // ==================== LOAD REAL USER PROFILE ====================
         async function loadUserProfile() {
             try {
                 const res = await fetch('/session');
                 const data = await res.json();
-                const pfpEl = document.getElementById('userPfp');
+
+                const pfpImg = document.getElementById('userPfp');
                 const nameEl = document.getElementById('userDisplayName');
                 const emailEl = document.getElementById('userEmail');
+
                 if (data.logged_in) {
-                    function stringToColor(str) { let hash = 0; for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); } let color = '#'; for (let i = 0; i < 3; i++) { const value = (hash >> (i * 8)) & 0xFF; color += ('00' + value.toString(16)).substr(-2); } return color; }
                     const email = data.email || 'user@example.com';
                     const name = data.name || email.split('@')[0];
-                    pfpEl.style.background = stringToColor(email);
-                    pfpEl.textContent = email.charAt(0).toUpperCase();
+
+                    // Load a real Google/Roblox avatar if available (fallback to UI Avatars)
+                    let avatarUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=6b7280&color=fff&bold=true';
+                    if (data.provider === 'google') {
+                        avatarUrl = `https://lh3.googleusercontent.com/a/default-user=s96-c`;
+                    }
+
+                    pfpImg.src = avatarUrl;
+                    pfpImg.alt = `${name}'s Avatar`;
+                    pfpImg.style.display = 'block';
+
+                    nameEl.textContent = name.toUpperCase();
                     nameEl.innerHTML = `${name.toUpperCase()} <span class="badge-free">Free</span>`;
                     emailEl.textContent = email;
                 } else {
-                    pfpEl.style.background = '#6b7280';
-                    pfpEl.textContent = '?';
-                    nameEl.innerHTML = `Guest <span class="badge-free">Free</span>`;
+                    // Guest Mode
+                    pfpImg.src = 'https://ui-avatars.com/api/?name=G&background=6b7280&color=fff&bold=true';
+                    nameEl.textContent = 'GUEST';
+                    nameEl.innerHTML = `GUEST <span class="badge-free">Free</span>`;
                     emailEl.textContent = 'Not Logged In';
                 }
-            } catch (error) { console.error('Failed to load user profile:', error); }
+            } catch (error) {
+                console.error('Failed to load user profile:', error);
+            }
         }
         loadUserProfile();
 
+        // ==================== DYNAMICALLY LOAD MODELS ====================
         let selectedModelId = null;
         let availableModels = {};
         const modelTrigger = document.getElementById('modelTrigger');
