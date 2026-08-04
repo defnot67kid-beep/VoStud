@@ -659,7 +659,12 @@
     </div>
 
     <div class="main-content">
-        <div class="top-bar"><div class="status-pill"><span class="status-dot" id="statusDot"></span><span id="statusText">Not Paired</span></div></div>
+        <div class="top-bar">
+            <div class="status-pill">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Not Paired</span>
+            </div>
+        </div>
         <div id="messages"></div>
         <div id="heroArea" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
             <div class="hero-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke="#52525b"/><circle cx="12" cy="12" r="4" stroke="#fff"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#52525b"/></svg></div>
@@ -760,14 +765,19 @@
             e.stopPropagation();
             document.getElementById('settingsDropup').classList.remove('open');
             pairModal.style.display = 'flex';
-            pairCodeDisplay.textContent = 'Generating...';
+            pairCodeDisplay.textContent = 'Loading...';
             pairTimer.textContent = '...';
 
             try {
                 const res = await fetch('/api/generate-code', { method: 'POST' });
                 const data = await res.json();
                 pairCodeDisplay.textContent = data.code;
-                startTimer(data.expires_in);
+                
+                if (data.new === false && pairInterval) {
+                    // Timer already running
+                } else {
+                    startTimer(data.expires_in);
+                }
             } catch {
                 pairCodeDisplay.textContent = 'Error';
                 pairTimer.textContent = 'Failed to generate code';
@@ -777,23 +787,71 @@
         function startTimer(seconds) {
             let remaining = seconds;
             clearInterval(pairInterval);
-            pairInterval = setInterval(() => {
-                remaining--;
-                const m = Math.floor(remaining / 60);
-                const s = remaining % 60;
-                pairTimer.textContent = `Expires in ${m}:${s.toString().padStart(2, '0')}`;
+            
+            const updateTimer = () => {
                 if (remaining <= 0) {
                     clearInterval(pairInterval);
                     pairCodeDisplay.textContent = 'Expired';
                     pairTimer.textContent = 'Code expired. Click Pair Plugin again.';
+                    
+                    setTimeout(() => {
+                        if (pairModal.style.display === 'flex') {
+                            document.getElementById('pairPluginBtn').click();
+                        }
+                    }, 5000);
+                    return;
                 }
-            }, 1000);
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                pairTimer.textContent = `Expires in ${m}:${s.toString().padStart(2, '0')}`;
+                remaining--;
+            };
+
+            updateTimer();
+            pairInterval = setInterval(updateTimer, 1000);
         }
 
         function closePairModal() {
             clearInterval(pairInterval);
             pairModal.style.display = 'none';
         }
+
+        // ==================== PAIRING STATUS CHECK ====================
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+
+        async function checkPairingStatus() {
+            try {
+                const res = await fetch('/status');
+                const data = await res.json();
+                
+                if (!data.paired) {
+                    statusText.textContent = 'Not Paired';
+                    statusDot.className = 'status-dot offline';
+                } else {
+                    // Query the pair check endpoint to get the Roblox username
+                    const pairingRes = await fetch('/api/check-pair', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pairing_id: localStorage.getItem('pairing_id') })
+                    });
+                    const pairingData = await pairingRes.json();
+                    
+                    if (pairingData.paired) {
+                        statusText.textContent = `Paired to: ${pairingData.roblox_username || 'RobloxUser'}`;
+                        statusDot.className = 'status-dot online';
+                    } else {
+                        statusText.textContent = 'Not Paired';
+                        statusDot.className = 'status-dot offline';
+                    }
+                }
+            } catch {
+                statusText.textContent = 'Server Offline';
+                statusDot.className = 'status-dot offline';
+            }
+        }
+        checkPairingStatus();
+        setInterval(checkPairingStatus, 5000);
 
         // ==================== SETTINGS DROPUP LOGIC ====================
         const settingsBtn = document.getElementById('settingsBtn');
@@ -828,7 +886,6 @@
                     const email = data.email || 'user@example.com';
                     const name = data.name || email.split('@')[0];
 
-                    // Use the actual Google picture, or fallback to Avatar
                     const avatarUrl = data.picture || 
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6b7280&color=fff&bold=true`;
 
@@ -840,7 +897,6 @@
                     nameEl.innerHTML = `${name.toUpperCase()} <span class="badge-free">Free</span>`;
                     emailEl.textContent = email;
                 } else {
-                    // Guest Mode
                     pfpImg.src = 'https://ui-avatars.com/api/?name=G&background=6b7280&color=fff&bold=true';
                     nameEl.textContent = 'GUEST';
                     nameEl.innerHTML = `GUEST <span class="badge-free">Free</span>`;
@@ -941,30 +997,6 @@
             triggerName.textContent = m.name; 
             renderModelList("");
         }
-
-        // ==================== PAIRING STATUS CHECK ====================
-        const statusText = document.getElementById('statusText');
-        const statusDot = document.getElementById('statusDot');
-
-        async function checkPairingStatus() {
-            try {
-                const res = await fetch('/status');
-                const data = await res.json();
-                // The server returns { paired: true } if the code was validated
-                if (data.paired) {
-                    statusText.textContent = 'Paired';
-                    statusDot.className = 'status-dot online';
-                } else {
-                    statusText.textContent = 'Not Paired';
-                    statusDot.className = 'status-dot offline';
-                }
-            } catch {
-                statusText.textContent = 'Server Offline';
-                statusDot.className = 'status-dot offline';
-            }
-        }
-        checkPairingStatus();
-        setInterval(checkPairingStatus, 5000);
 
         const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.multiple = true; fileInput.style.display = 'none'; document.body.appendChild(fileInput);
         const chatBox = document.getElementById('chatBox');
