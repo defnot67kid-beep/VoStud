@@ -129,7 +129,7 @@
             cursor: pointer;
             transition: 0.2s;
             border-radius: 10px;
-            position: relative; /* Required for the dropup menu */
+            position: relative;
         }
         .user-profile:hover { background: #1a1a1a; }
         
@@ -187,14 +187,14 @@
             padding: 8px;
             border-radius: 12px;
             transition: all 0.2s ease;
-            background: #17171a; /* Dark button background */
+            background: #17171a;
         }
         .settings-btn:hover {
             background: #27272a;
             transform: scale(1.05);
         }
         .settings-icon-img {
-            width: 24px; /* Increased size */
+            width: 24px;
             height: 24px;
             object-fit: contain;
             opacity: 0.8;
@@ -207,7 +207,7 @@
         /* Dropup Menu */
         .settings-dropup {
             position: absolute;
-            bottom: 55px; /* Positioned above the button */
+            bottom: 55px;
             right: 0;
             width: 200px;
             background: #18181b;
@@ -248,7 +248,6 @@
             fill: none;
         }
 
-        /* Logout gets a special red color */
         .settings-dropup-item.logout {
             color: #f87171;
         }
@@ -943,15 +942,29 @@
             renderModelList("");
         }
 
+        // ==================== PAIRING STATUS CHECK ====================
         const statusText = document.getElementById('statusText');
         const statusDot = document.getElementById('statusDot');
+
         async function checkPairingStatus() {
             try {
                 const res = await fetch('/status');
-                if (res.ok) { statusText.textContent = 'Paired'; statusDot.className = 'status-dot online'; }
-            } catch { statusText.textContent = 'Not Paired'; statusDot.className = 'status-dot offline'; }
+                const data = await res.json();
+                // The server returns { paired: true } if the code was validated
+                if (data.paired) {
+                    statusText.textContent = 'Paired';
+                    statusDot.className = 'status-dot online';
+                } else {
+                    statusText.textContent = 'Not Paired';
+                    statusDot.className = 'status-dot offline';
+                }
+            } catch {
+                statusText.textContent = 'Server Offline';
+                statusDot.className = 'status-dot offline';
+            }
         }
-        checkPairingStatus(); setInterval(checkPairingStatus, 5000);
+        checkPairingStatus();
+        setInterval(checkPairingStatus, 5000);
 
         const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.multiple = true; fileInput.style.display = 'none'; document.body.appendChild(fileInput);
         const chatBox = document.getElementById('chatBox');
