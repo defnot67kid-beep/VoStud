@@ -32,70 +32,30 @@
             gap: 16px;
         }
 
-        .daily-spin-wrapper { position: relative; display: inline-block; }
-        .daily-spin-btn {
-            background: #8b5cf6; color: #ffffff; border: none;
-            padding: 8px 16px 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 500;
-            cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s ease;
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); font-family: inherit;
-        }
-        .daily-spin-btn:hover { background: #7c3aed; transform: scale(1.02); }
-        .spin-notification {
-            position: absolute; top: -4px; right: -4px; width: 14px; height: 14px;
-            background: #ef4444; border-radius: 50%; border: 2px solid #09090b; z-index: 2;
-        }
-        .spin-icon-wrapper { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%; flex-shrink: 0; }
-        .spin-icon-img { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
-        .spin-icon-img.looping { animation: infiniteSpin 3s linear infinite; }
-        @keyframes infiniteSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .status-pill { display: flex; align-items: center; gap: 8px; color: #9ca3af; font-size: 14px; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; display: inline-block; transition: background 0.3s ease; }
-        .status-dot.online { background: #22c55e; }
-        .status-dot.offline { background: #ef4444; }
-
-        /* ==================== TOAST NOTIFICATION ==================== */
-        #toastContainer {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            pointer-events: none;
+        .status-pill {
             display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .toast {
-            background: #ef4444;
-            color: #ffffff;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 15px;
+            align-items: center;
+            gap: 8px;
+            color: #9ca3af;
+            font-size: 14px;
             font-weight: 500;
-            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
-            border: 1px solid #dc2626;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: auto;
-            max-width: 90vw;
-            text-align: center;
-            font-family: 'Inter', sans-serif;
         }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #6b7280; /* Default gray for Not Paired */
+            display: inline-block;
+            transition: background 0.3s ease;
         }
+        .status-dot.online { background: #22c55e; } /* Green for Paired */
+        .status-dot.offline { background: #6b7280; } /* Gray for Not Paired */
 
         /* ==================== MAIN CONTAINER ==================== */
         .main-wrapper {
             width: 100%; max-width: 800px; padding: 20px;
             display: flex; flex-direction: column; align-items: center;
             margin-top: -60px; z-index: 1;
-            position: relative;
         }
 
         .hero-icon {
@@ -302,7 +262,7 @@
 
         /* SPECIAL: + Button Dropdown (Points UP) */
         #dropdownPlus {
-            bottom: 40px; /* Positions it ABOVE the button */
+            bottom: 40px;
             left: -10px;
             width: 220px;
         }
@@ -417,25 +377,10 @@
 
 <!-- TOP BAR -->
 <div class="top-bar">
-    <div class="daily-spin-wrapper">
-        <button class="daily-spin-btn" id="spinBtn">
-            <div class="spin-icon-wrapper">
-                <img src="Images/Icons/Spins.png" alt="Spin" class="spin-icon-img" id="spinIcon">
-            </div>
-            Daily Spin!
-        </button>
-        <div class="spin-notification"></div>
-    </div>
-
     <div class="status-pill">
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Not Paired</span>
     </div>
-</div>
-
-<!-- ==================== TOAST NOTIFICATION ==================== -->
-<div id="toastContainer">
-    <div class="toast" id="toastMessage">⚠️ You can only upload up to 5 files.</div>
 </div>
 
 <!-- MAIN WRAPPER -->
@@ -443,7 +388,6 @@
     
     <div id="messages"></div>
 
-    <!-- Hero Section -->
     <div id="heroArea" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
         <div class="hero-icon">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
@@ -457,7 +401,6 @@
 
     <div class="chat-box" id="chatBox">
         
-        <!-- ==================== MODERN FILE LIST ==================== -->
         <div id="fileListContainer"></div>
         <div class="upload-progress-container" id="progressContainer">
             <div class="upload-progress-bar" id="progressBar"></div>
@@ -472,18 +415,11 @@
                 <div style="position: relative;">
                     <button class="tool-btn" id="plusBtn">+</button>
                     <div class="dropdown-menu" id="dropdownPlus">
-                        <!-- Services Item (Hover/Click to reveal sub-menu) -->
                         <div class="dropdown-item" id="servicesParent">
                             <span><span class="icon">📁</span> Services</span>
                             <span class="arrow">▶</span>
                         </div>
-                        
-                        <!-- Sub-Menu: Services List -->
-                        <div class="dropdown-menu" id="dropdownServices">
-                            <!-- Items injected via JS -->
-                        </div>
-
-                        <!-- Add Files Item (Triggers hidden file input) -->
+                        <div class="dropdown-menu" id="dropdownServices"></div>
                         <div class="dropdown-item" id="addFilesItem">
                             <span><span class="icon">➕</span> Add Files</span>
                         </div>
@@ -497,9 +433,7 @@
                         <span id="generateLabel">Generate</span> 
                         <span style="font-size:10px; color:#52525b;">▼</span>
                     </button>
-                    <div class="dropdown-menu" id="dropdownGenerate">
-                        <!-- Items injected via JS -->
-                    </div>
+                    <div class="dropdown-menu" id="dropdownGenerate"></div>
                 </div>
                 
                 <div class="toolbar-divider"></div>
@@ -569,27 +503,26 @@
 </div>
 
 <script>
-    // ==================== CONSTANTS ====================
-    const MAX_FILES = 5; 
-    const MAX_SAFE_SIZE = 10 * 1024; // 10 KB per file (slice limit)
-    const MAX_CONTEXT_BUDGET = 20000; // Hard limit on total character count sent to AI
-    const ALLOWED_EXTENSIONS = ['.lua', '.luau', '.txt', '.json', '.rbxm', '.rbxmx'];
+    // ==================== PAIRING STATUS ====================
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
 
-    // ==================== TOAST NOTIFICATION ====================
-    const toastElement = document.getElementById('toastMessage');
-    let toastTimeout = null;
-
-    function showToast(message) {
-        toastElement.textContent = message || "⚠️ Error.";
-        toastElement.classList.add('show');
-        if (toastTimeout) clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => {
-            toastElement.classList.remove('show');
-            toastTimeout = null;
-        }, 3000);
+    async function checkPairingStatus() {
+        try {
+            const res = await fetch('/status');
+            if (res.ok) {
+                statusText.textContent = 'Paired';
+                statusDot.className = 'status-dot online'; // Green
+            }
+        } catch {
+            statusText.textContent = 'Not Paired';
+            statusDot.className = 'status-dot offline'; // Gray
+        }
     }
+    checkPairingStatus();
+    setInterval(checkPairingStatus, 5000);
 
-    // ==================== HIDDEN FILE INPUT & DROP ====================
+    // ==================== HIDDEN FILE INPUT ====================
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.multiple = true;
@@ -601,18 +534,15 @@
     const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
     let uploadedFiles = []; 
-    let isGenerationLocked = false;
 
-    // ==================== DRAG & DROP ====================
+    // Drag & Drop
     chatBox.addEventListener("dragover", (e) => {
         e.preventDefault();
         chatBox.classList.add("dragging");
     });
-
     chatBox.addEventListener("dragleave", () => {
         chatBox.classList.remove("dragging");
     });
-
     chatBox.addEventListener("drop", (e) => {
         e.preventDefault();
         chatBox.classList.remove("dragging");
@@ -621,19 +551,13 @@
         }
     });
 
-    // ==================== ICON & EXTENSION HELPERS ====================
-    function getFileExtension(filename) {
-        return filename.substring(filename.lastIndexOf('.')).toLowerCase();
-    }
-
-    function isAllowedFile(filename) {
-        return ALLOWED_EXTENSIONS.includes(getFileExtension(filename));
-    }
-
+    // File Helpers
     function getFileIcon(file) {
         if (file.type.startsWith("image/")) return "🖼️";
         if (file.name.endsWith(".lua") || file.name.endsWith(".luau")) return "📜";
         if (file.name.endsWith(".rbxm") || file.name.endsWith(".rbx")) return "📦";
+        if (file.type.startsWith("audio/")) return "🎵";
+        if (file.type.startsWith("video/")) return "🎥";
         return "📄";
     }
 
@@ -645,7 +569,7 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
-    // ==================== SHOW UPLOAD PROGRESS ====================
+    // Simulate Progress
     function simulateProgress(callback) {
         progressContainer.classList.add('active');
         let progress = 0;
@@ -664,77 +588,79 @@
         }, 100);
     }
 
-    // ==================== HANDLE FILES (OPTIMIZED) ====================
     function handleFiles(fileList) {
-        if (isGenerationLocked) return;
-
         const newFiles = Array.from(fileList);
-
-        // Limit: 5 files total
-        if (uploadedFiles.length + newFiles.length > MAX_FILES) {
-            showToast(`⚠️ You can only upload up to ${MAX_FILES} files.`);
-            return;
-        }
-
-        // Filter out unsupported file types
-        const validFiles = newFiles.filter(f => isAllowedFile(f.name));
-        if (validFiles.length !== newFiles.length) {
-            showToast(`⚠️ Only .lua, .luau, .txt, .json, .rbxm, and .rbxmx files are allowed.`);
-        }
-
-        if (validFiles.length === 0) return;
-
         let processedCount = 0;
 
         simulateProgress(() => {
             renderFilePreviews();
         });
 
-        for (let file of validFiles) {
-            
-            // OPTIMIZATION: Slice the first 10KB ONLY. Never read the whole file.
-            const blob = file.slice(0, MAX_SAFE_SIZE);
+        for (let file of newFiles) {
             const reader = new FileReader();
-
             reader.onload = function(event) {
-                let content = event.target.result;
-                let previewUrl = null;
-
-                // OPTIMIZATION: If it's an image, create a local object URL for the UI.
-                // NEVER load the whole image as Base64 into memory.
+                let previewData = null;
                 if (file.type.startsWith("image/")) {
-                    previewUrl = URL.createObjectURL(file);
+                    previewData = event.target.result;
                 }
-
                 uploadedFiles.push({
                     name: file.name,
                     size: formatFileSize(file.size),
-                    rawBytes: file.size,
                     type: file.type,
-                    previewUrl: previewUrl, // Local Object URL
-                    textContent: file.type.startsWith("text/") || file.name.endsWith(".lua") 
-                        ? content 
-                        : `[Binary File: ${file.name} - ${formatFileSize(file.size)}]`
+                    previewData: previewData,
+                    textContent: file.type.startsWith("text/") || file.name.endsWith(".lua") ? event.target.result : "Binary"
                 });
-
                 processedCount++;
-                if (processedCount === validFiles.length) {
+                if (processedCount === newFiles.length) {
                     renderFilePreviews();
                     setTimeout(() => {
-                        progressContainer.classList.remove("active");
-                        progressBar.style.width = "0%";
+                        progressContainer.classList.remove('active');
+                        progressBar.style.width = '0%';
                     }, 300);
                 }
             };
-
-            // If image, read as generic text so we get the metadata only, or just handle differently
-            // We will read text files as text, images as text (metadata), and binary as text.
-            // Since we sliced it, we just let readAsText handle it safely.
-            reader.readAsText(blob);
+            if (file.type.startsWith("image/")) {
+                reader.readAsDataURL(file);
+            } else {
+                reader.readAsText(file);
+            }
         }
     }
 
-    // ==================== + BUTTON DROPDOWN ====================
+    function renderFilePreviews() {
+        fileListContainer.innerHTML = "";
+        if (uploadedFiles.length === 0) {
+            fileListContainer.classList.remove('visible');
+            return;
+        }
+        fileListContainer.classList.add('visible');
+        uploadedFiles.forEach((fileData, index) => {
+            const card = document.createElement('div');
+            card.className = 'file-preview-card';
+            let previewHtml = fileData.previewData 
+                ? `<img class="preview-img" src="${fileData.previewData}" alt="${fileData.name}">`
+                : `<span style="font-size:32px;">${getFileIcon({name: fileData.name, type: fileData.type})}</span>`;
+            card.innerHTML = `
+                <div class="file-preview-img-area">${previewHtml}</div>
+                <div class="file-info-area">
+                    <div class="file-name">${fileData.name}</div>
+                    <div class="file-size">${fileData.size}</div>
+                </div>
+                <div class="file-remove-btn" data-index="${index}">✕</div>
+            `;
+            fileListContainer.appendChild(card);
+        });
+        document.querySelectorAll('.file-remove-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const index = parseInt(this.getAttribute('data-index'));
+                uploadedFiles.splice(index, 1);
+                renderFilePreviews();
+            });
+        });
+    }
+
+    // ==================== + BUTTON DROPDOWN LOGIC ====================
     const plusBtn = document.getElementById('plusBtn');
     const dropdownPlus = document.getElementById('dropdownPlus');
     const dropdownServices = document.getElementById('dropdownServices');
@@ -780,83 +706,29 @@
     }
 
     plusBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownPlus));
-
     servicesParent.addEventListener('mouseenter', () => {
-        if (dropdownPlus.classList.contains('open')) {
-            dropdownServices.classList.add('open');
-        }
+        if (dropdownPlus.classList.contains('open')) dropdownServices.classList.add('open');
     });
-
     dropdownServices.addEventListener('mouseleave', () => {
         dropdownServices.classList.remove('open');
     });
 
-    // ==================== ADD FILES CLICK ====================
     addFilesItem.addEventListener('click', (e) => {
         e.stopPropagation();
         fileInput.click();
         closeDropdown(dropdownPlus);
         closeDropdown(dropdownServices);
     });
-
     fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleFiles(e.target.files);
-        }
+        if (e.target.files.length > 0) handleFiles(e.target.files);
         e.target.value = '';
     });
-
     document.addEventListener('click', () => {
         document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open'));
     });
-
     renderDropdownServices();
 
-    // ==================== RENDER PREVIEWS ====================
-    function renderFilePreviews() {
-        fileListContainer.innerHTML = "";
-        if (uploadedFiles.length === 0) {
-            fileListContainer.classList.remove('visible');
-            return;
-        }
-        fileListContainer.classList.add('visible');
-
-        uploadedFiles.forEach((fileData, index) => {
-            const card = document.createElement('div');
-            card.className = 'file-preview-card';
-            
-            let previewHtml = '';
-            if (fileData.previewUrl) {
-                previewHtml = `<img class="preview-img" src="${fileData.previewUrl}" alt="${fileData.name}">`;
-            } else {
-                previewHtml = `<span style="font-size:32px;">${getFileIcon({name: fileData.name, type: fileData.type})}</span>`;
-            }
-
-            card.innerHTML = `
-                <div class="file-preview-img-area">
-                    ${previewHtml}
-                </div>
-                <div class="file-info-area">
-                    <div class="file-name">${fileData.name}</div>
-                    <div class="file-size">${fileData.size}</div>
-                </div>
-                <div class="file-remove-btn" data-index="${index}">✕</div>
-            `;
-            fileListContainer.appendChild(card);
-        });
-
-        document.querySelectorAll('.file-remove-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const index = parseInt(this.getAttribute('data-index'));
-                uploadedFiles.splice(index, 1);
-                renderFilePreviews();
-            });
-        });
-    }
-
-
-    // ==================== GENERATE DROPDOWN ====================
+    // ==================== GENERATE DROPDOWN LOGIC ====================
     const generateBtn = document.getElementById('generateBtn');
     const dropdownGenerate = document.getElementById('dropdownGenerate');
     const generateIcon = document.getElementById('generateIcon');
@@ -886,15 +758,18 @@
             dropdownGenerate.appendChild(item);
         });
     }
-
     generateBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate));
     renderDropdownGenerate();
 
-    // ==================== SPIN LOGIC ====================
-    const spinIcon = document.getElementById('spinIcon');
-    spinIcon.classList.add('looping');
+    // ==================== MODEL SELECTOR LOGIC ====================
+    const modelTrigger = document.getElementById('modelTrigger');
+    const triggerIcon = document.getElementById('triggerIcon');
+    const triggerName = document.getElementById('triggerName');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modelListContainer = document.getElementById('modelListContainer');
+    const detailPanel = document.getElementById('detailPanel');
+    const searchInput = document.getElementById('searchInput');
 
-    // ==================== MODEL DATA ====================
     const availableModels = {
         "groq-llama": { id: "groq-llama", name: "Llama 3.3 70B", provider: "Groq", icon: "L", color: "#7c3aed", desc: "Ultra-fast coding model via Groq's free tier. Great for general scripting.", speed: 10, intelligence: 9, cost: 1, context: "128K tokens" },
         "groq-mixtral": { id: "groq-mixtral", name: "Mixtral 8x7B", provider: "Groq", icon: "M", color: "#2563eb", desc: "Instruct model via Groq. Great for logic and math-heavy scripts.", speed: 8, intelligence: 7, cost: 1, context: "32K tokens" },
@@ -902,9 +777,8 @@
     };
 
     let selectedModelId = "groq-llama";
-    const modalOverlay = document.getElementById('modalOverlay');
 
-    document.getElementById('modelTrigger').addEventListener('click', () => {
+    modelTrigger.addEventListener('click', () => {
         modalOverlay.classList.add('open'); renderModelList(""); updateDetailPanel(selectedModelId);
     });
 
@@ -912,7 +786,7 @@
     modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
 
     function renderModelList(filter) {
-        const container = document.getElementById('modelListContainer'); container.innerHTML = "";
+        modelListContainer.innerHTML = "";
         Object.values(availableModels).forEach(model => {
             if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
             const item = document.createElement('div');
@@ -920,11 +794,11 @@
             item.innerHTML = `<div class="list-icon" style="background:${model.color};">${model.icon}</div><div class="list-info"><div class="list-name">${model.name}</div><div class="list-desc">${model.provider}</div></div>`;
             item.onmouseenter = () => updateDetailPanel(model.id);
             item.onclick = () => { selectModel(model.id); closeModal(); };
-            container.appendChild(item);
+            modelListContainer.appendChild(item);
         });
     }
 
-    document.getElementById('searchInput').addEventListener('input', (e) => { renderModelList(e.target.value); });
+    searchInput.addEventListener('input', (e) => { renderModelList(e.target.value); });
 
     function updateDetailPanel(id) {
         const m = availableModels[id]; if(!m) return;
@@ -943,15 +817,14 @@
 
     function selectModel(id) {
         selectedModelId = id; const m = availableModels[id];
-        document.getElementById('triggerIcon').textContent = m.icon; document.getElementById('triggerIcon').style.background = m.color;
-        document.getElementById('triggerName').textContent = m.name; renderModelList("");
+        triggerIcon.textContent = m.icon; triggerIcon.style.background = m.color;
+        triggerName.textContent = m.name; renderModelList("");
     }
 
     // ==================== GENERATION LOGIC ====================
     const promptInput = document.getElementById('promptInput');
     const messagesDiv = document.getElementById('messages');
-    const statusText = document.getElementById('statusText');
-    const statusDot = document.getElementById('statusDot');
+    const heroArea = document.getElementById('heroArea');
 
     promptInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
 
@@ -979,40 +852,27 @@
         addMessage(prompt, 'user');
         promptInput.value = ''; promptInput.style.height = 'auto';
 
-        // ==================== OPTIMIZATION: CONTEXT BUDGET ====================
         let finalFileStrings = [];
-        let currentCharCount = 0;
+        const MAX_SAFE_SIZE = 50 * 1024;
 
         for (let i = 0; i < uploadedFiles.length; i++) {
             const fileData = uploadedFiles[i];
             let content = fileData.textContent;
-
-            // Estimate if we have room in the budget
-            if (currentCharCount + content.length > MAX_CONTEXT_BUDGET) {
-                const remaining = MAX_CONTEXT_BUDGET - currentCharCount;
-                if (remaining > 0) {
-                    content = content.substring(0, remaining) + "\n\n... [TRUNCATED DUE TO TOKEN BUDGET]";
-                    addMessage(`⚠️ Hit context budget. "${fileData.name}" was partially truncated.`, 'ai');
-                    finalFileStrings.push(`--- File: ${fileData.name} (PARTIAL) ---\n${content}`);
-                    currentCharCount += remaining;
-                } else {
-                    addMessage(`⚠️ Context budget full. Skipping "${fileData.name}".`, 'ai');
-                }
-                break; // Stop processing further files
-            } else {
-                finalFileStrings.push(`--- File: ${fileData.name} ---\n${content}`);
-                currentCharCount += content.length;
+            if (fileData.type.startsWith("image/")) {
+                content = `[Image uploaded: ${fileData.name} (${fileData.size})]`;
+            } else if (fileData.rawBytes && fileData.rawBytes > MAX_SAFE_SIZE) {
+                content = content.substring(0, MAX_SAFE_SIZE) + "\n\n... [TRUNCATED TO 50KB]";
+                addMessage(`⚠️ File "${fileData.name}" was too large. Truncated to 50KB.`, 'ai');
             }
+            finalFileStrings.push(`--- File: ${fileData.name} ---\n${content}`);
         }
 
         const combinedFileContent = finalFileStrings.join('\n\n');
         const payload = { prompt, destination: selectedDestination, model_id: selectedModelId };
         if (combinedFileContent) payload.fileContent = combinedFileContent;
 
-        isGenerationLocked = true;
-
         try {
-            const response = await fetch('http://localhost:8000/generate', { 
+            const response = await fetch('/generate', { 
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) 
             });
             const data = await response.json();
@@ -1020,22 +880,12 @@
             if (response.ok) {
                 addMessage(`✅ Generated via ${data.model_used}`, 'ai');
                 addCodeBlock(data.code, 'ai');
-                await fetch('http://localhost:8000/send-to-roblox', { 
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
-                        code: data.code, 
-                        scriptName: prompt.slice(0, 30).replace(/\s/g, '_') + '_Script',
-                        destination: selectedDestination 
-                    }) 
-                });
                 addMessage(`📦 Script queued for Roblox!`, 'ai');
             } else {
                 addMessage(`❌ Error: ${data.detail || 'Unknown error'}`, 'ai');
             }
         } catch (error) {
             addMessage(`❌ Connection Error: ${error.message}`, 'ai');
-        } finally {
-            isGenerationLocked = false;
         }
     }
 
@@ -1053,13 +903,6 @@
         }
     });
 
-    async function checkStatus() {
-        try {
-            const res = await fetch('http://localhost:8000/status');
-            if (res.ok) { statusText.textContent = 'Connected'; statusDot.className = 'status-dot online'; }
-        } catch { statusText.textContent = 'Not Paired'; statusDot.className = 'status-dot offline'; }
-    }
-    checkStatus(); setInterval(checkStatus, 5000);
     selectModel("groq-llama");
 </script>
 </body>
