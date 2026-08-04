@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Final Production Server
+Roblox AI Coder - Final Production Server (Expanded Free Models)
 Handles Real Google & Roblox Login, Sessions, and AI Generation
 """
 
@@ -231,21 +231,63 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== AI MODELS ====================
+# ==================== AI MODELS (EXPANDED FREE OPTIONS) ====================
 MODELS = {
     "groq-llama": {
         "name": "Llama 3.3 70B",
-        "provider": "Meta (via Groq)",
+        "provider": "Meta (via Groq) [Free]",
         "api": "groq",
         "id": "llama-3.3-70b-versatile",
-        "description": "Ultra-fast coding model via Groq."
+        "description": "Ultra-fast coding model via Groq's generous free tier."
+    },
+    "groq-mixtral": {
+        "name": "Mixtral 8x7B",
+        "provider": "Mistral (via Groq) [Free]",
+        "api": "groq",
+        "id": "mixtral-8x7b-32768",
+        "description": "Excellent legacy model for logic and math-heavy scripts."
     },
     "gpt-4o": {
         "name": "GPT-4o",
         "provider": "OpenAI (via OpenRouter)",
         "api": "openrouter",
         "id": "openai/gpt-4o",
-        "description": "#1 Coding model. Excellent for complex game logic."
+        "description": "#1 Coding model. Excellent for complex game logic (Paid)."
+    },
+    "claude-3.5-sonnet": {
+        "name": "Claude 3.5 Sonnet",
+        "provider": "Anthropic (via OpenRouter)",
+        "api": "openrouter",
+        "id": "anthropic/claude-3.5-sonnet",
+        "description": "Incredible at following formatting rules (Paid)."
+    },
+    "deepseek-v3": {
+        "name": "DeepSeek V3",
+        "provider": "DeepSeek (via OpenRouter) [Free]",
+        "api": "openrouter",
+        "id": "deepseek/deepseek-chat",
+        "description": "Open-source powerhouse. Easily rivals GPT-4 for free."
+    },
+    "gemini-2.0-flash": {
+        "name": "Gemini 2.0 Flash",
+        "provider": "Google (via OpenRouter) [Free]",
+        "api": "openrouter",
+        "id": "google/gemini-2.0-flash-exp",
+        "description": "Sub-second latency. Great for boilerplate code."
+    },
+    "qwen-2.5-coder": {
+        "name": "Qwen 2.5 Coder 7B",
+        "provider": "Alibaba (via OpenRouter) [Free]",
+        "api": "openrouter",
+        "id": "qwen/qwen-2.5-coder-7b-instruct",
+        "description": "Tiny and lightning fast. Perfect for Lua utility scripts."
+    },
+    "mistral-7b-instruct": {
+        "name": "Mistral 7B Instruct",
+        "provider": "Mistral (via OpenRouter) [Free]",
+        "api": "openrouter",
+        "id": "mistralai/mistral-7b-instruct",
+        "description": "Lightweight, fast, and completely free."
     }
 }
 
