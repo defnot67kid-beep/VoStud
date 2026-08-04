@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Full Server (Plugin Data Snapshot)
+Roblox AI Coder - Full Server (Pairing ID System)
 Supports Pairing, AI Generation, and Live Roblox Service Viewer
 """
 
@@ -111,7 +111,8 @@ async def generate_code(request: Request):
         "email": user['email'],
         "name": user['name'],
         "created_at": time.time(),
-        "expires_at": time.time() + CODE_EXPIRY_SECONDS
+        "expires_at": time.time() + CODE_EXPIRY_SECONDS,
+        "pairing_id": None  # Empty initially
     }
     user_code_map[user_id] = code
     
@@ -140,11 +141,34 @@ async def validate_code(request: Request):
             logger.warning(f"Expired code attempted: {code}")
             return {"valid": False, "error": "Code has expired"}
         
-        logger.info(f"Code {code} validated successfully for {code_data['email']}")
-        return {"valid": True, "email": code_data["email"], "name": code_data["name"]}
+        # Generate a permanent Pairing ID for this plugin session
+        pairing_id = str(uuid.uuid4())
+        code_data["pairing_id"] = pairing_id
+
+        logger.info(f"Code {code} validated successfully for {code_data['email']} (ID: {pairing_id})")
+        
+        # DO NOT DELETE THE CODE YET. The plugin will poll for this ID.
+        return {"valid": True, "email": code_data["email"], "name": code_data["name"], "pairing_id": pairing_id}
     except Exception as e:
         logger.error(f"Validation error: {str(e)}")
         return {"valid": False, "error": str(e)}
+
+@app.post("/api/check-pair")
+async def check_pair(request: Request):
+    """Roblox Plugin polls this to check if its pairing_id is active."""
+    data = await request.json()
+    pairing_id = data.get("pairing_id")
+    
+    if not pairing_id:
+        return {"paired": False}
+    
+    # Loop through pending_codes to see if this pairing_id exists
+    for code, code_data in list(pending_codes.items()):
+        if code_data.get("pairing_id") == pairing_id:
+            # Found it!
+            return {"paired": True}
+    
+    return {"paired": False}
 
 @app.post("/api/consume-code")
 async def consume_code(request: Request):
@@ -386,7 +410,7 @@ async def get_queue_size():
 # ==================== RUN ====================
 if __name__ == "__main__":
     logger.info("=" * 50)
-    logger.info("🚀 Roblox AI Coder v4.0 - Plugin Data Sync")
+    logger.info("🚀 Roblox AI Coder v4.0 - Full Server")
     logger.info("🌐 Server running on port 8000")
     logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
