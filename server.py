@@ -1,5 +1,5 @@
 """
-Roblox AI Coder - Pairing Server (FIXED: Missing Endpoints)
+Roblox AI Coder - Final Pairing Server (Render-Proof)
 """
 
 import os
@@ -39,12 +39,14 @@ if not SESSION_SECRET:
 # ==================== FASTAPI SETUP ====================
 app = FastAPI(title="Roblox AI Coder", version="4.0.0")
 
+# SPECIFIC CORS CONFIG TO ALLOW ROBLOX
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 app.mount("/static", StaticFiles(directory="web"), name="static")
@@ -85,31 +87,31 @@ async def generate_code(request: Request):
 
 @app.post("/api/validate-code")
 async def validate_code(request: Request):
-    data = await request.json()
-    code = data.get("code")
-    
-    logger.info(f"Received validation request for code: {code}")
-    
-    if not code:
-        raise HTTPException(status_code=400, detail="Code required")
-    
-    code_data = pending_codes.get(code)
-    if not code_data:
-        logger.warning(f"Invalid code attempted: {code}")
-        raise HTTPException(status_code=404, detail="Invalid or expired code")
-    
-    if time.time() > code_data["expires_at"]:
-        pending_codes.pop(code, None)
-        user_code_map.pop(code_data["user_id"], None)
-        logger.warning(f"Expired code attempted: {code}")
-        raise HTTPException(status_code=410, detail="Code has expired")
-    
-    logger.info(f"Code {code} validated successfully for {code_data['email']}")
-    return {
-        "valid": True,
-        "email": code_data["email"],
-        "name": code_data["name"]
-    }
+    try:
+        data = await request.json()
+        code = data.get("code")
+        
+        logger.info(f"Received validation request for code: {code}")
+        
+        if not code:
+            return {"valid": False, "error": "Code required"}
+        
+        code_data = pending_codes.get(code)
+        if not code_data:
+            logger.warning(f"Invalid code attempted: {code}")
+            return {"valid": False, "error": "Invalid or expired code"}
+        
+        if time.time() > code_data["expires_at"]:
+            pending_codes.pop(code, None)
+            user_code_map.pop(code_data["user_id"], None)
+            logger.warning(f"Expired code attempted: {code}")
+            return {"valid": False, "error": "Code has expired"}
+        
+        logger.info(f"Code {code} validated successfully for {code_data['email']}")
+        return {"valid": True, "email": code_data["email"], "name": code_data["name"]}
+    except Exception as e:
+        logger.error(f"Validation error: {str(e)}")
+        return {"valid": False, "error": str(e)}
 
 @app.post("/api/consume-code")
 async def consume_code(request: Request):
@@ -117,7 +119,7 @@ async def consume_code(request: Request):
     code = data.get("code")
     
     if not code:
-        raise HTTPException(status_code=400, detail="Code required")
+        return {"success": False, "reason": "Code required"}
     
     code_data = pending_codes.get(code)
     if not code_data:
@@ -126,7 +128,6 @@ async def consume_code(request: Request):
     pending_codes.pop(code, None)
     user_code_map.pop(code_data["user_id"], None)
     logger.info(f"Code {code} consumed by plugin")
-    
     return {"success": True, "message": "Code consumed successfully"}
 
 # ==================== PAGE ROUTES ====================
@@ -155,8 +156,7 @@ async def get_session(request: Request):
     if user: return {"logged_in": True, **user}
     return {"logged_in": False}
 
-# ==================== MISSING ENDPOINTS ADDED ====================
-
+# ==================== STATUS & MODELS ENDPOINTS ====================
 @app.get("/models")
 async def get_models():
     return {"models": MODELS}
@@ -166,8 +166,8 @@ async def get_status(request: Request):
     user = request.session.get('user')
     if not user:
         return {"paired": False}
-    # Check if this user has an active code mapped or is actively paired
-    return {"paired": user['id'] in user_code_map or any(v['user_id'] == user['id'] for v in pending_codes.values())}
+    # Check if this user has an active code mapped
+    return {"paired": user['id'] in user_code_map}
 
 # ==================== OAUTH ROUTES ====================
 @app.get('/auth/google')
@@ -239,12 +239,13 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== AI MODELS & QUEUE ====================
+# ==================== AI MODELS ====================
 MODELS = {
     "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
     "deepseek-v3": {"name": "DeepSeek V3", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-chat", "image": "/images/models/deepseek.png", "context": "64K tokens", "speed": 9, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Open-source powerhouse."},
 }
 
+# ==================== QUEUE ====================
 code_queue = deque()
 MAX_QUEUE_SIZE = 100
 
@@ -299,4 +300,8 @@ async def acknowledge_code(request: dict):
     return {"success": False}
 
 if __name__ == "__main__":
+    logger.info("=" * 50)
+    logger.info("🚀 Roblox AI Coder v4.0 - Pairing System")
+    logger.info("🌐 Server running on port 8000")
+    logger.info("=" * 50)
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
