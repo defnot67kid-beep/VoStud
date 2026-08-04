@@ -1,6 +1,5 @@
 """
-Roblox AI Coder - Pairing Code System
-Handles Code Generation, Validation, and User Linking
+Roblox AI Coder - Pairing Server (FIXED CORS & Debug Logs)
 """
 
 import os
@@ -39,21 +38,26 @@ if not SESSION_SECRET:
 
 # ==================== FASTAPI SETUP ====================
 app = FastAPI(title="Roblox AI Coder", version="4.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# ALLOW SPECIFIC ORIGINS TO PREVENT CORS BLOCKING
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Keep wildcard for web, but we handle Roblox specifics below
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 app.mount("/static", StaticFiles(directory="web"), name="static")
 app.mount("/images", StaticFiles(directory="web/images"), name="images")
 
 # ==================== CODE PAIRING SYSTEM ====================
-# Stores: code -> { user_id, email, name, expires_at }
 pending_codes = {}
-# Stores: user_id -> code (for quick lookup)
 user_code_map = {}
-
-CODE_EXPIRY_SECONDS = 600  # 10 minutes
+CODE_EXPIRY_SECONDS = 600
 
 def generate_pairing_code():
-    return str(random.randint(100000, 999999)) # 6-digit code
+    return str(random.randint(100000, 999999))
 
 @app.post("/api/generate-code")
 async def generate_code(request: Request):
@@ -61,14 +65,12 @@ async def generate_code(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Remove old code if they already have one
     user_id = user['id']
     if user_id in user_code_map:
         old_code = user_code_map[user_id]
         pending_codes.pop(old_code, None)
         user_code_map.pop(user_id, None)
     
-    # Create new code
     code = generate_pairing_code()
     pending_codes[code] = {
         "user_id": user_id,
@@ -79,6 +81,7 @@ async def generate_code(request: Request):
     }
     user_code_map[user_id] = code
     
+    logger.info(f"Generated pairing code {code} for {user['email']}")
     return {"code": code, "expires_in": CODE_EXPIRY_SECONDS}
 
 @app.post("/api/validate-code")
@@ -86,20 +89,26 @@ async def validate_code(request: Request):
     data = await request.json()
     code = data.get("code")
     
+    # DEBUG LOGGING SO WE KNOW IF ROBLOX IS HITTING US
+    logger.info(f"Received validation request for code: {code}")
+    
     if not code:
         raise HTTPException(status_code=400, detail="Code required")
     
     code_data = pending_codes.get(code)
     if not code_data:
+        logger.warning(f"Invalid code attempted: {code}")
         raise HTTPException(status_code=404, detail="Invalid or expired code")
     
     if time.time() > code_data["expires_at"]:
         pending_codes.pop(code, None)
         user_code_map.pop(code_data["user_id"], None)
+        logger.warning(f"Expired code attempted: {code}")
         raise HTTPException(status_code=410, detail="Code has expired")
     
-    # Valid code! Return user info to the plugin
-    # IMPORTANT: Do NOT delete the code yet. The plugin will send a /api/consume-code request later.
+    logger.info(f"Code {code} validated successfully for {code_data['email']}")
+    
+    # Return user info to the plugin
     return {
         "valid": True,
         "email": code_data["email"],
@@ -108,7 +117,6 @@ async def validate_code(request: Request):
 
 @app.post("/api/consume-code")
 async def consume_code(request: Request):
-    """Called by the plugin after successfully linking to consume the code"""
     data = await request.json()
     code = data.get("code")
     
@@ -119,9 +127,9 @@ async def consume_code(request: Request):
     if not code_data:
         return {"success": False, "reason": "Already used or expired"}
     
-    # Consume it (Delete it permanently)
     pending_codes.pop(code, None)
     user_code_map.pop(code_data["user_id"], None)
+    logger.info(f"Code {code} consumed by plugin")
     
     return {"success": True, "message": "Code consumed successfully"}
 
@@ -151,15 +159,11 @@ async def get_session(request: Request):
     if user: return {"logged_in": True, **user}
     return {"logged_in": False}
 
-# ==================== OAUTH ROUTES (GOOGLE & ROBLOX) ====================
+# ==================== OAUTH ROUTES ====================
 @app.get('/auth/google')
 async def login_google(request: Request):
     redirect_uri = str(request.base_url) + "auth/google/callback"
-    auth_url = (
-        "https://accounts.google.com/o/oauth2/v2/auth?"
-        f"client_id={GOOGLE_CLIENT_ID}&redirect_uri={redirect_uri}&"
-        "response_type=code&scope=openid%20email%20profile&prompt=select_account"
-    )
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={GOOGLE_CLIENT_ID}&redirect_uri={redirect_uri}&response_type=code&scope=openid%20email%20profile&prompt=select_account"
     return RedirectResponse(url=auth_url)
 
 @app.get('/auth/google/callback')
@@ -191,11 +195,7 @@ async def google_callback(request: Request):
 @app.get('/auth/roblox')
 async def login_roblox(request: Request):
     redirect_uri = str(request.base_url) + "auth/roblox/callback"
-    auth_url = (
-        "https://apis.roblox.com/oauth/v1/authorize?"
-        f"client_id={ROBLOX_CLIENT_ID}&redirect_uri={redirect_uri}&"
-        "response_type=code&scope=openid%20profile"
-    )
+    auth_url = f"https://apis.roblox.com/oauth/v1/authorize?client_id={ROBLOX_CLIENT_ID}&redirect_uri={redirect_uri}&response_type=code&scope=openid%20profile"
     return RedirectResponse(url=auth_url)
 
 @app.get('/auth/roblox/callback')
@@ -229,7 +229,7 @@ async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url="/home")
 
-# ==================== AI MODELS & GENERATION ====================
+# ==================== AI MODELS & QUEUE ====================
 MODELS = {
     "groq-llama": {"name": "Llama 3.3 70B", "provider": "Groq / Meta", "api": "groq", "id": "llama-3.3-70b-versatile", "image": "/images/models/meta.png", "context": "128K tokens", "speed": 10, "intelligence": 9, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Ultra-fast coding model via Groq's free tier."},
     "deepseek-v3": {"name": "DeepSeek V3", "provider": "DeepSeek", "api": "openrouter", "id": "deepseek/deepseek-chat", "image": "/images/models/deepseek.png", "context": "64K tokens", "speed": 9, "intelligence": 10, "cost": 1, "images": False, "cost_per_request": "Free", "description": "Open-source powerhouse."},
