@@ -759,7 +759,7 @@
             window.location.href = '/auth/logout';
         });
 
-        // ==================== LOAD REAL USER PROFILE ====================
+        // ==================== LOAD REAL USER PROFILE (FIXED PFP) ====================
         async function loadUserProfile() {
             try {
                 const res = await fetch('/session');
@@ -770,22 +770,18 @@
                 const emailEl = document.getElementById('userEmail');
 
                 if (data.logged_in) {
-    const email = data.email || 'user@example.com';
-    const name = data.name || email.split('@')[0];
+                    const email = data.email || 'user@example.com';
+                    const name = data.name || email.split('@')[0];
 
-    // PRIORITY 1: Use the real Google picture from the server session
-    // PRIORITY 2: Fallback to a beautiful generated avatar
-    const avatarUrl = data.picture || 
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6b7280&color=fff&bold=true`;
+                    /* 
+                       FIXED LOGIC HERE:
+                       1. PRIORITY: Use the real Google picture from the server session.
+                       2. FALLBACK: If null, use a beautiful generated UI Avatar.
+                    */
+                    const avatarUrl = data.picture || 
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6b7280&color=fff&bold=true`;
 
-    pfpImg.src = avatarUrl;
-    pfpImg.alt = `${name}'s Avatar`;
-    pfpImg.style.display = 'block';
-
-    nameEl.textContent = name.toUpperCase();
-    nameEl.innerHTML = `${name.toUpperCase()} <span class="badge-free">Free</span>`;
-    emailEl.textContent = email;
-}
+                    pfpImg.src = avatarUrl;
                     pfpImg.alt = `${name}'s Avatar`;
                     pfpImg.style.display = 'block';
 
@@ -793,6 +789,7 @@
                     nameEl.innerHTML = `${name.toUpperCase()} <span class="badge-free">Free</span>`;
                     emailEl.textContent = email;
                 } else {
+                    // Guest Mode
                     pfpImg.src = 'https://ui-avatars.com/api/?name=G&background=6b7280&color=fff&bold=true';
                     nameEl.textContent = 'GUEST';
                     nameEl.innerHTML = `GUEST <span class="badge-free">Free</span>`;
