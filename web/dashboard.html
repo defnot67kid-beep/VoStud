@@ -389,8 +389,27 @@
         .bar-segment.filled-yellow { background: #eab308; }
         .bar-segment.filled-red { background: #ef4444; }
         .detail-divider { border: none; border-top: 1px solid #27272a; margin: 16px 0; }
-        .detail-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; color: #6b7280; }
+        
+        .detail-row { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 14px; 
+            padding: 8px 0; 
+            color: #6b7280; 
+            border-bottom: 1px solid #27272a; 
+        }
+        .detail-row:last-child { border-bottom: none; }
         .detail-row span:last-child { color: #fff; font-weight: 500; }
+        
+        .detail-row svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -586,6 +605,8 @@
                 <hr class="detail-divider">
                 <div class="detail-row"><span>Context</span><span id="detailContext">128K tokens</span></div>
                 <div class="detail-row"><span>Provider</span><span id="detailProvider">Groq</span></div>
+                <div class="detail-row"><span>Images</span><span id="detailImages">Supported</span></div>
+                <div class="detail-row"><span>Per request</span><span id="detailPrice">Free</span></div>
             </div>
         </div>
     </div>
@@ -636,8 +657,8 @@
         loadUserProfile();
 
         // ==================== DYNAMICALLY LOAD MODELS ====================
-        let selectedModelId = "groq-llama";
-        let availableModels = {}; // Will be populated from server
+        let selectedModelId = "auto"; // Default to Auto
+        let availableModels = {};
 
         const modelTrigger = document.getElementById('modelTrigger');
         const triggerIcon = document.getElementById('triggerIcon');
@@ -653,14 +674,13 @@
                 const data = await res.json();
                 availableModels = data.models || {};
                 
-                // Update the pill with the first model found
-                const firstKey = Object.keys(availableModels)[0];
-                if (firstKey) {
-                    selectedModelId = firstKey;
-                    const first = availableModels[firstKey];
-                    triggerIcon.textContent = first.icon || '?';
-                    triggerIcon.style.background = first.color || '#7c3aed';
-                    triggerName.textContent = first.name || 'Unknown';
+                // Default to Auto
+                if (availableModels["auto"]) {
+                    selectedModelId = "auto";
+                    const first = availableModels["auto"];
+                    triggerIcon.textContent = first.icon || '🌙';
+                    triggerIcon.style.background = first.color || '#6b7280';
+                    triggerName.textContent = first.name || 'Auto';
                 }
             } catch (error) {
                 console.error('Failed to load models:', error);
@@ -681,9 +701,29 @@
             modelListContainer.innerHTML = "";
             Object.entries(availableModels).forEach(([key, model]) => {
                 if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
+                
+                // Special styling for the Auto item (Add the lock icon and Plus badge text)
+                const isAuto = key === "auto";
+                const listIcon = isAuto ? '🌙' : (model.icon || '?');
+                const listDesc = isAuto ? 'Routes each request to the best model for the job.' : model.provider;
+                
                 const item = document.createElement('div');
                 item.className = 'model-list-item';
-                item.innerHTML = `<div class="list-icon" style="background:${model.color || '#7c3aed'};">${model.icon || '?'}</div><div class="list-info"><div class="list-name">${model.name}</div><div class="list-desc">${model.provider}</div></div>`;
+                
+                // Add a tiny lock icon inline for Auto
+                let lockHtml = '';
+                if (isAuto) {
+                    lockHtml = `<span style="margin-left:auto; color:#52525b; font-size: 16px;">🔒</span>`;
+                }
+
+                item.innerHTML = `
+                    <div class="list-icon" style="background:${model.color || '#6b7280'};">${listIcon}</div>
+                    <div class="list-info">
+                        <div class="list-name">${model.name} ${isAuto ? '<span style="font-size:10px; color:#8b5cf6; background:rgba(139,92,246,0.15); padding:2px 6px; border-radius:4px; margin-left:6px;">Plus</span>' : ''}</div>
+                        <div class="list-desc">${listDesc}</div>
+                    </div>
+                    ${lockHtml}
+                `;
                 item.onmouseenter = () => updateDetailPanel(key);
                 item.onclick = () => { selectModel(key); closeModal(); };
                 modelListContainer.appendChild(item);
@@ -700,13 +740,26 @@
             document.getElementById('detailDesc').textContent = m.description || 'No description available.';
             document.getElementById('detailProvider').textContent = m.provider || 'Unknown';
             document.getElementById('detailContext').textContent = m.context || 'N/A';
-            renderBars('detailSpeed', m.speed || 5, 'filled-green');
-            renderBars('detailIntel', m.intelligence || 5, 'filled-yellow');
-            renderBars('detailCost', m.cost || 5, 'filled-red');
+            document.getElementById('detailImages').textContent = m.images ? 'Supported' : 'Not supported';
+            document.getElementById('detailPrice').textContent = m.cost_per_request || 'Unknown';
+            
+            // Handle Auto mode stats (Adapts)
+            const isAuto = id === "auto";
+            renderBars('detailSpeed', isAuto ? 0 : (m.speed || 5), isAuto ? 'filled-adapt' : 'filled-green', isAuto);
+            renderBars('detailIntel', isAuto ? 0 : (m.intelligence || 5), isAuto ? 'filled-adapt' : 'filled-yellow', isAuto);
+            renderBars('detailCost', isAuto ? 0 : (m.cost || 5), isAuto ? 'filled-adapt' : 'filled-red', isAuto);
         }
 
-        function renderBars(containerId, value, fillClass) {
+        function renderBars(containerId, value, fillClass, isAdapt) {
             const container = document.getElementById(containerId); container.innerHTML = "";
+            if (isAdapt) {
+                // Auto Mode: Display a text instead of bars
+                const label = document.createElement('div');
+                label.style.cssText = "font-size: 14px; color: #fff; width: 100%; text-align: right;";
+                label.textContent = "Adapts";
+                container.appendChild(label);
+                return;
+            }
             for (let i = 0; i < 10; i++) {
                 const seg = document.createElement('div'); seg.className = `bar-segment${i < value ? ' ' + fillClass : ''}`; container.appendChild(seg);
             }
@@ -1055,7 +1108,7 @@
         });
 
         // ==================== INIT ====================
-        loadModels(); // Fetch the models from the server first!
+        loadModels();
     </script>
 </body>
 </html>
