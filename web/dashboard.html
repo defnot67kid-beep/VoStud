@@ -657,7 +657,6 @@
                         </div>
                     </div>
                     <div style="position: relative;">
-                        <!-- UPDATED GENERATE BUTTON WITH PAIRING LOCK -->
                         <button class="tool-btn" id="generateBtn" title="Pair with Studio to send">
                             <span id="generateIcon">∞</span> 
                             <span id="generateLabel">Generate</span> 
@@ -732,7 +731,7 @@
     </div>
 
     <script>
-        // ==================== PAIRING LOGIC ====================
+        // ==================== PAIRING MODAL LOGIC ====================
         const pairModal = document.getElementById('pairModal');
         const pairCodeDisplay = document.getElementById('pairCodeDisplay');
         const pairTimer = document.getElementById('pairTimer');
@@ -947,39 +946,50 @@
             try {
                 const res = await fetch('/status');
                 const data = await res.json();
+                
+                // CASE 1: Web says Not Paired
                 if (!data.paired) {
                     statusText.textContent = 'Not Paired';
                     statusDot.className = 'status-dot offline';
                     
-                    // LOCK THE GENERATE BUTTON
                     generateBtn.disabled = true;
                     generateBtn.style.opacity = '0.4';
                     generateBtn.style.cursor = 'not-allowed';
                     generateBtn.title = 'Pair with Studio to send';
+
+                // CASE 2: Web says Paired
                 } else {
-                    const pairingRes = await fetch('/api/check-pair', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pairing_id: localStorage.getItem('pairing_id') })
-                    });
-                    const pairingData = await pairingRes.json();
-                    if (pairingData.paired) {
-                        statusText.textContent = `Paired to: ${pairingData.roblox_username || 'RobloxUser'}`;
-                        statusDot.className = 'status-dot online';
+                    // Fetch the pairing ID from LocalStorage (set by the Roblox Plugin)
+                    const storedPairId = localStorage.getItem('roblox_pairing_id');
+                    
+                    // If we don't have a stored ID, request it from the server
+                    if (storedPairId) {
+                        const pairingRes = await fetch('/api/check-pair', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pairing_id: storedPairId })
+                        });
+                        const pairingData = await pairingRes.json();
                         
-                        // UNLOCK THE GENERATE BUTTON
-                        generateBtn.disabled = false;
-                        generateBtn.style.opacity = '1';
-                        generateBtn.style.cursor = 'pointer';
-                        generateBtn.title = 'Generate Script';
-                    } else {
-                        statusText.textContent = 'Not Paired';
-                        statusDot.className = 'status-dot offline';
-                        generateBtn.disabled = true;
-                        generateBtn.style.opacity = '0.4';
-                        generateBtn.style.cursor = 'not-allowed';
-                        generateBtn.title = 'Pair with Studio to send';
+                        if (pairingData.paired) {
+                            statusText.textContent = `Paired to: ${pairingData.roblox_username || 'RobloxUser'}`;
+                            statusDot.className = 'status-dot online';
+                            
+                            generateBtn.disabled = false;
+                            generateBtn.style.opacity = '1';
+                            generateBtn.style.cursor = 'pointer';
+                            generateBtn.title = 'Generate Script';
+                            return;
+                        }
                     }
+                    
+                    // Fallback (No ID found in storage, but server says paired)
+                    statusText.textContent = 'Paired';
+                    statusDot.className = 'status-dot online';
+                    generateBtn.disabled = false;
+                    generateBtn.style.opacity = '1';
+                    generateBtn.style.cursor = 'pointer';
+                    generateBtn.title = 'Generate Script';
                 }
             } catch {
                 statusText.textContent = 'Server Offline';
