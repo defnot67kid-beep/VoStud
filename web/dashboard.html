@@ -640,7 +640,7 @@
         <div id="messages"></div>
         <div id="heroArea" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
             <div class="hero-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke="#52525b"/><circle cx="12" cy="12" r="4" stroke="#fff"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#52525b"/></svg></div>
-            <div class="hero-title">What's the vision?</div>
+            <div class="hero-title">What's on your mind?</div>
         </div>
         <div class="chat-box" id="chatBox">
             <div id="fileListContainer"></div>
@@ -657,7 +657,12 @@
                         </div>
                     </div>
                     <div style="position: relative;">
-                        <button class="tool-btn" id="generateBtn"><span id="generateIcon">∞</span> <span id="generateLabel">Generate</span> <span style="font-size:10px; color:#52525b;">▼</span></button>
+                        <!-- UPDATED GENERATE BUTTON WITH PAIRING LOCK -->
+                        <button class="tool-btn" id="generateBtn" title="Pair with Studio to send">
+                            <span id="generateIcon">∞</span> 
+                            <span id="generateLabel">Generate</span> 
+                            <span style="font-size:10px; color:#52525b;">▼</span>
+                        </button>
                         <div class="dropdown-menu" id="dropdownGenerate"></div>
                     </div>
                     <div class="toolbar-divider"></div>
@@ -933,9 +938,10 @@
             renderModelList("");
         }
 
-        // ==================== PAIRING STATUS CHECK ====================
+        // ==================== PAIRING STATUS & GENERATE BUTTON LOCK ====================
         const statusText = document.getElementById('statusText');
         const statusDot = document.getElementById('statusDot');
+        const generateBtn = document.getElementById('generateBtn');
 
         async function checkPairingStatus() {
             try {
@@ -944,6 +950,12 @@
                 if (!data.paired) {
                     statusText.textContent = 'Not Paired';
                     statusDot.className = 'status-dot offline';
+                    
+                    // LOCK THE GENERATE BUTTON
+                    generateBtn.disabled = true;
+                    generateBtn.style.opacity = '0.4';
+                    generateBtn.style.cursor = 'not-allowed';
+                    generateBtn.title = 'Pair with Studio to send';
                 } else {
                     const pairingRes = await fetch('/api/check-pair', {
                         method: 'POST',
@@ -954,14 +966,28 @@
                     if (pairingData.paired) {
                         statusText.textContent = `Paired to: ${pairingData.roblox_username || 'RobloxUser'}`;
                         statusDot.className = 'status-dot online';
+                        
+                        // UNLOCK THE GENERATE BUTTON
+                        generateBtn.disabled = false;
+                        generateBtn.style.opacity = '1';
+                        generateBtn.style.cursor = 'pointer';
+                        generateBtn.title = 'Generate Script';
                     } else {
                         statusText.textContent = 'Not Paired';
                         statusDot.className = 'status-dot offline';
+                        generateBtn.disabled = true;
+                        generateBtn.style.opacity = '0.4';
+                        generateBtn.style.cursor = 'not-allowed';
+                        generateBtn.title = 'Pair with Studio to send';
                     }
                 }
             } catch {
                 statusText.textContent = 'Server Offline';
                 statusDot.className = 'status-dot offline';
+                generateBtn.disabled = true;
+                generateBtn.style.opacity = '0.4';
+                generateBtn.style.cursor = 'not-allowed';
+                generateBtn.title = 'Pair with Studio to send';
             }
         }
         checkPairingStatus();
@@ -1065,7 +1091,7 @@
         document.addEventListener('click', () => { document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('open')); });
         renderDropdownServices();
 
-        const generateBtn = document.getElementById('generateBtn');
+        const generateBtnDropdown = document.getElementById('generateBtn');
         const dropdownGenerate = document.getElementById('dropdownGenerate');
         const generateIcon = document.getElementById('generateIcon');
         const generateLabel = document.getElementById('generateLabel');
@@ -1081,7 +1107,7 @@
                 dropdownGenerate.appendChild(item);
             });
         }
-        generateBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate)); renderDropdownGenerate();
+        generateBtnDropdown.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate)); renderDropdownGenerate();
 
         // ==================== GENERATION (UPDATED FOR VOSTUD) ====================
         const promptInput = document.getElementById('promptInput');
@@ -1093,20 +1119,21 @@
         function addCodeBlock(code, type) { const msgDiv = document.createElement('div'); msgDiv.className = `msg ${type}`; msgDiv.innerHTML = `<pre class="code-block">${escapeHtml(code)}</pre>`; messagesDiv.appendChild(msgDiv); messagesDiv.scrollTop = messagesDiv.scrollHeight; }
         
         async function triggerGeneration() {
+            // PREVENT CLICKING IF BUTTON IS DISABLED
+            if (generateBtn.disabled) return;
+
             const prompt = promptInput.value.trim(); if (!prompt) return;
 
             addMessage(prompt, 'user');
             promptInput.value = ''; promptInput.style.height = 'auto';
 
-            // 1. Send to Vostud AI via the new API proxy
             try {
-                // Because we changed the server.py routing, we call /api/chat now
                 const response = await fetch('/api/chat', { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ 
                         message: prompt, 
-                        model: selectedModelId, // Automatically handles Vostud and Local models
+                        model: selectedModelId,
                         use_rag: true,
                         format: "detailed"
                     }) 
@@ -1114,16 +1141,12 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    // Get the response text from Vostud
                     const aiResponse = data.response || "No response returned.";
-                    // Determine which model was actually used (returned by Vostud)
                     const modelUsed = data.model_used || selectedModelId;
                     
                     addMessage(`✅ Generated via ${modelUsed}`, 'ai');
                     addCodeBlock(aiResponse, 'ai');
                     
-                    // 2. Try to send the script to the Roblox Plugin via the Queue
-                    // We only attempt this if the output looks like Lua code
                     if (aiResponse.includes("local") || aiResponse.includes("function") || aiResponse.includes("Instance.new")) {
                         await fetch('/generate', { 
                             method: 'POST', 
@@ -1131,7 +1154,7 @@
                             body: JSON.stringify({ 
                                 prompt: prompt, 
                                 destination: selectedDestination, 
-                                model_id: "groq-llama" // Fallback internally for plugin
+                                model_id: "groq-llama"
                             }) 
                         });
                         addMessage(`📦 Script queued for Roblox!`, 'ai');
