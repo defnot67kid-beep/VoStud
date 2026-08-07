@@ -118,7 +118,6 @@
         }
         .action-card.upgrade:hover { border-color: rgba(139, 92, 246, 0.5); }
 
-        /* ==================== USER PROFILE ==================== */
         .user-profile {
             margin-top: 12px;
             padding: 10px 14px;
@@ -170,7 +169,6 @@
             font-weight: 500;
         }
 
-        /* ==================== SETTINGS ICON & DROPUP MENU ==================== */
         .settings-wrapper {
             position: relative;
             display: flex;
@@ -204,7 +202,6 @@
             opacity: 1;
         }
 
-        /* Dropup Menu */
         .settings-dropup {
             position: absolute;
             bottom: 55px;
@@ -220,9 +217,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             z-index: 100;
         }
-        .settings-dropup.open {
-            display: flex;
-        }
+        .settings-dropup.open { display: flex; }
 
         .settings-dropup-item {
             display: flex;
@@ -236,25 +231,10 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .settings-dropup-item:hover {
-            background: #27272a;
-            color: #fff;
-        }
-        .settings-dropup-item svg {
-            width: 20px;
-            height: 20px;
-            stroke: currentColor;
-            stroke-width: 2;
-            fill: none;
-        }
-
-        .settings-dropup-item.logout {
-            color: #f87171;
-        }
-        .settings-dropup-item.logout:hover {
-            background: rgba(248, 113, 113, 0.1);
-            color: #ef4444;
-        }
+        .settings-dropup-item:hover { background: #27272a; color: #fff; }
+        .settings-dropup-item svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; }
+        .settings-dropup-item.logout { color: #f87171; }
+        .settings-dropup-item.logout:hover { background: rgba(248, 113, 113, 0.1); color: #ef4444; }
 
         /* ==================== MAIN CONTENT ==================== */
         .main-content {
@@ -613,10 +593,8 @@
             <div class="action-card"><div class="content"><h4>Join Discord</h4><p>Perks, updates &amp; support</p></div><div class="arrow">→</div></div>
             <div class="action-card upgrade"><div class="content"><h4>Upgrade to Pro</h4><p>Unlock more features</p></div><div class="arrow">→</div></div>
             
-            <!-- ==================== USER PROFILE & SETTINGS ==================== -->
             <div class="user-profile" id="userProfile">
                 <div class="user-info">
-                    <!-- PFP Container -->
                     <div class="pfp-container" id="userPfpContainer">
                         <img id="userPfp" src="https://ui-avatars.com/api/?name=G&background=6b7280&color=fff" alt="Avatar">
                     </div>
@@ -629,7 +607,6 @@
                     </div>
                 </div>
                 
-                <!-- ==================== SETTINGS BUTTON & DROPUP ==================== -->
                 <div class="settings-wrapper">
                     <button class="settings-btn" id="settingsBtn">
                         <img src="/static/Images/Icons/settings.png" alt="Settings" class="settings-icon-img">
@@ -659,12 +636,7 @@
     </div>
 
     <div class="main-content">
-        <div class="top-bar">
-            <div class="status-pill">
-                <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Not Paired</span>
-            </div>
-        </div>
+        <div class="top-bar"><div class="status-pill"><span class="status-dot" id="statusDot"></span><span id="statusText">Not Paired</span></div></div>
         <div id="messages"></div>
         <div id="heroArea" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
             <div class="hero-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke="#52525b"/><circle cx="12" cy="12" r="4" stroke="#fff"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="#52525b"/></svg></div>
@@ -816,43 +788,6 @@
             pairModal.style.display = 'none';
         }
 
-        // ==================== PAIRING STATUS CHECK ====================
-        const statusText = document.getElementById('statusText');
-        const statusDot = document.getElementById('statusDot');
-
-        async function checkPairingStatus() {
-            try {
-                const res = await fetch('/status');
-                const data = await res.json();
-                
-                if (!data.paired) {
-                    statusText.textContent = 'Not Paired';
-                    statusDot.className = 'status-dot offline';
-                } else {
-                    // Query the pair check endpoint to get the Roblox username
-                    const pairingRes = await fetch('/api/check-pair', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pairing_id: localStorage.getItem('pairing_id') })
-                    });
-                    const pairingData = await pairingRes.json();
-                    
-                    if (pairingData.paired) {
-                        statusText.textContent = `Paired to: ${pairingData.roblox_username || 'RobloxUser'}`;
-                        statusDot.className = 'status-dot online';
-                    } else {
-                        statusText.textContent = 'Not Paired';
-                        statusDot.className = 'status-dot offline';
-                    }
-                }
-            } catch {
-                statusText.textContent = 'Server Offline';
-                statusDot.className = 'status-dot offline';
-            }
-        }
-        checkPairingStatus();
-        setInterval(checkPairingStatus, 5000);
-
         // ==================== SETTINGS DROPUP LOGIC ====================
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsDropup = document.getElementById('settingsDropup');
@@ -925,7 +860,7 @@
                 const res = await fetch('/models');
                 const data = await res.json();
                 availableModels = data.models || {};
-                const modelKeys = Object.keys(availableModels).filter(key => key !== 'auto');
+                const modelKeys = Object.keys(availableModels);
                 modelCountEl.textContent = `${modelKeys.length} models`;
                 if (modelKeys.length > 0) {
                     selectedModelId = modelKeys[0];
@@ -948,7 +883,7 @@
 
         function renderModelList(filter) {
             modelListContainer.innerHTML = "";
-            const modelEntries = Object.entries(availableModels).filter(([key]) => key !== 'auto');
+            const modelEntries = Object.entries(availableModels);
             modelEntries.forEach(([key, model]) => {
                 if (filter && !model.name.toLowerCase().includes(filter.toLowerCase())) return;
                 const item = document.createElement('div');
@@ -998,6 +933,41 @@
             renderModelList("");
         }
 
+        // ==================== PAIRING STATUS CHECK ====================
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+
+        async function checkPairingStatus() {
+            try {
+                const res = await fetch('/status');
+                const data = await res.json();
+                if (!data.paired) {
+                    statusText.textContent = 'Not Paired';
+                    statusDot.className = 'status-dot offline';
+                } else {
+                    const pairingRes = await fetch('/api/check-pair', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pairing_id: localStorage.getItem('pairing_id') })
+                    });
+                    const pairingData = await pairingRes.json();
+                    if (pairingData.paired) {
+                        statusText.textContent = `Paired to: ${pairingData.roblox_username || 'RobloxUser'}`;
+                        statusDot.className = 'status-dot online';
+                    } else {
+                        statusText.textContent = 'Not Paired';
+                        statusDot.className = 'status-dot offline';
+                    }
+                }
+            } catch {
+                statusText.textContent = 'Server Offline';
+                statusDot.className = 'status-dot offline';
+            }
+        }
+        checkPairingStatus();
+        setInterval(checkPairingStatus, 5000);
+
+        // ==================== FILE UPLOAD ====================
         const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.multiple = true; fileInput.style.display = 'none'; document.body.appendChild(fileInput);
         const chatBox = document.getElementById('chatBox');
         const fileListContainer = document.getElementById('fileListContainer');
@@ -1060,6 +1030,7 @@
             });
         }
 
+        // ==================== DROPDOWN LOGIC ====================
         const plusBtn = document.getElementById('plusBtn');
         const dropdownPlus = document.getElementById('dropdownPlus');
         const dropdownServices = document.getElementById('dropdownServices');
@@ -1112,35 +1083,82 @@
         }
         generateBtn.addEventListener('click', (e) => toggleDropdown(e, dropdownGenerate)); renderDropdownGenerate();
 
+        // ==================== GENERATION (UPDATED FOR VOSTUD) ====================
         const promptInput = document.getElementById('promptInput');
         const messagesDiv = document.getElementById('messages');
         const heroArea = document.getElementById('heroArea');
+
         promptInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
         function addMessage(text, type) { messagesDiv.style.display = 'flex'; const msgDiv = document.createElement('div'); msgDiv.className = `msg ${type}`; msgDiv.innerHTML = `<div>${text}</div>`; messagesDiv.appendChild(msgDiv); messagesDiv.scrollTop = messagesDiv.scrollHeight; }
         function addCodeBlock(code, type) { const msgDiv = document.createElement('div'); msgDiv.className = `msg ${type}`; msgDiv.innerHTML = `<pre class="code-block">${escapeHtml(code)}</pre>`; messagesDiv.appendChild(msgDiv); messagesDiv.scrollTop = messagesDiv.scrollHeight; }
+        
         async function triggerGeneration() {
             const prompt = promptInput.value.trim(); if (!prompt) return;
-            addMessage(prompt, 'user'); promptInput.value = ''; promptInput.style.height = 'auto';
-            let finalFileStrings = []; const MAX_SAFE_SIZE = 50 * 1024;
-            for (let i = 0; i < uploadedFiles.length; i++) {
-                const fileData = uploadedFiles[i]; let content = fileData.textContent;
-                if (fileData.type.startsWith("image/")) { content = `[Image uploaded: ${fileData.name} (${fileData.size})]`; }
-                else if (fileData.rawBytes && fileData.rawBytes > MAX_SAFE_SIZE) { content = content.substring(0, MAX_SAFE_SIZE) + "\n\n... [TRUNCATED TO 50KB]"; addMessage(`⚠️ File "${fileData.name}" was too large. Truncated to 50KB.`, 'ai'); }
-                finalFileStrings.push(`--- File: ${fileData.name} ---\n${content}`);
-            }
-            const combinedFileContent = finalFileStrings.join('\n\n');
-            const payload = { prompt, destination: selectedDestination, model_id: selectedModelId };
-            if (combinedFileContent) payload.fileContent = combinedFileContent;
+
+            addMessage(prompt, 'user');
+            promptInput.value = ''; promptInput.style.height = 'auto';
+
+            // 1. Send to Vostud AI via the new API proxy
             try {
-                const response = await fetch('/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                // Because we changed the server.py routing, we call /api/chat now
+                const response = await fetch('/api/chat', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        message: prompt, 
+                        model: selectedModelId, // Automatically handles Vostud and Local models
+                        use_rag: true,
+                        format: "detailed"
+                    }) 
+                });
                 const data = await response.json();
-                if (response.ok) { addMessage(`✅ Generated via ${data.model_used}`, 'ai'); addCodeBlock(data.code, 'ai'); addMessage(`📦 Script queued for Roblox!`, 'ai'); }
-                else { addMessage(`❌ Error: ${data.detail || 'Unknown error'}`, 'ai'); }
-            } catch (error) { addMessage(`❌ Connection Error: ${error.message}`, 'ai'); }
+                
+                if (response.ok) {
+                    // Get the response text from Vostud
+                    const aiResponse = data.response || "No response returned.";
+                    // Determine which model was actually used (returned by Vostud)
+                    const modelUsed = data.model_used || selectedModelId;
+                    
+                    addMessage(`✅ Generated via ${modelUsed}`, 'ai');
+                    addCodeBlock(aiResponse, 'ai');
+                    
+                    // 2. Try to send the script to the Roblox Plugin via the Queue
+                    // We only attempt this if the output looks like Lua code
+                    if (aiResponse.includes("local") || aiResponse.includes("function") || aiResponse.includes("Instance.new")) {
+                        await fetch('/generate', { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ 
+                                prompt: prompt, 
+                                destination: selectedDestination, 
+                                model_id: "groq-llama" // Fallback internally for plugin
+                            }) 
+                        });
+                        addMessage(`📦 Script queued for Roblox!`, 'ai');
+                    } else {
+                        addMessage(`📝 Response was not a Roblox script (Standard Chat Response)`, 'ai');
+                    }
+                } else {
+                    addMessage(`❌ Error: ${data.detail || 'Unknown error'}`, 'ai');
+                }
+            } catch (error) {
+                addMessage(`❌ Connection Error: ${error.message}`, 'ai');
+            }
         }
+
         function escapeHtml(text) { return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-        generateBtn.addEventListener('click', async (e) => { if (dropdownGenerate.classList.contains('open')) return; await triggerGeneration(); });
-        promptInput.addEventListener('keydown', async (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); await triggerGeneration(); } });
+
+        generateBtn.addEventListener('click', async (e) => {
+            if (dropdownGenerate.classList.contains('open')) return;
+            await triggerGeneration();
+        });
+
+        promptInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                await triggerGeneration();
+            }
+        });
 
         const micBtn = document.getElementById("micBtn");
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
